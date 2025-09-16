@@ -1,113 +1,304 @@
 'use client';
-
-import { useState } from 'react';
-
+import { useEffect, useRef, useState } from 'react';
 
 type Props = {
-initial?: Partial<{
-name: string; sku: string; price: number | string; cost: number | string;
-length_cm: number | string; width_cm: number | string; height_cm: number | string;
-weight_g: number | string; carrier: string; notes: string;
-shipping_actual_yen: number | string; volume_cm3: number | string; amazon_size_label: string;
-}>;
-onSubmit: (values: any) => Promise<void> | void;
-submitLabel?: string;
+    initial?: Partial<{
+        title: string;
+        shipping_actual_yen: number | string;
+        length_cm: number | string;
+        width_cm: number | string;
+        height_cm: number | string;
+        weight_g: number | string;
+        volume_cm3: number | string;
+        carrier: string;
+        amazon_size_label: string;
+    }>;
+    onSubmit: (values: any) => Promise<void> | void;
+    submitLabel?: string;
 };
 
-export default function ProductForm({ initial = {}, onSubmit, submitLabel = '保存' }: Props) {
-const [v, setV] = useState({
-name: initial.name ?? '',
-sku: initial.sku ?? '',
-price: String(initial.price ?? ''),
-cost: String(initial.cost ?? ''),
-length_cm: String(initial.length_cm ?? ''),
-width_cm: String(initial.width_cm ?? ''),
-height_cm: String(initial.height_cm ?? ''),
-weight_g: String(initial.weight_g ?? ''),
-carrier: initial.carrier ?? '',
-notes: initial.notes ?? '',
-shipping_actual_yen: String((initial as any).shipping_actual_yen ?? ''),
-volume_cm3: String((initial as any).volume_cm3 ?? ''),
-amazon_size_label: (initial as any).amazon_size_label ?? '',
-});
 
-const calcVolume = (l: string, w: string, h: string) => {
-const L = Number(l), W = Number(w), H = Number(h);
-if (Number.isFinite(L) && Number.isFinite(W) && Number.isFinite(H)) return String(Math.round(L * W * H));
-return '';
+// ---------- utils ----------
+function toHalfWidthNumeric(input: string): string {
+    let s = input.replace(/[０-９]/g, (ch) =>
+        String.fromCharCode(ch.charCodeAt(0) - 0xFF10 + 0x30)
+    );
+    s = s.replace(/．/g, '.');
+    return s;
+}
+function sanitizeDecimal(input: string): string {
+    // 少数: 数字とドットのみ / ドット1つ / 先頭. -> 0.
+    let s = input.replace(/[^0-9.]/g, '');
+    const firstDot = s.indexOf('.');
+    if (firstDot !== -1) s = s.slice(0, firstDot + 1) + s.slice(firstDot + 1).replace(/\./g, '');
+    if (s.startsWith('.')) s = '0' + s;
+    return s;
+}
+function sanitizeInt(input: string): string {
+    return input.replace(/[^0-9]/g, '');
+}
+
+const DECIMAL_FIELDS = new Set(['length_cm', 'width_cm', 'height_cm', 'weight_g']);
+const INT_FIELDS = new Set(['shipping_actual_yen']); // volume_cm3 は自動計算のみ
+const VOLUME_DIVISOR = 5;
+
+// 入力中の計算用：表示はそのまま、計算だけ半角化して解釈
+const parseMaybe = (s: string): number | undefined => {
+    const half = toHalfWidthNumeric(s ?? '');
+    if (half.trim() === '') return undefined;
+    const n = Number(half);
+    return Number.isFinite(n) ? n : undefined;
 };
 
-const onChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-const { name, value } = e.target;
-setV((s) => {
-const n: any = { ...s, [name]: value };
-if (['length_cm','width_cm','height_cm'].includes(name)) n.volume_cm3 = calcVolume(n.length_cm, n.width_cm, n.height_cm);
-return n;
-});
-};
+export default function ProductForm({
+    initial = {},
+    onSubmit,
+    submitLabel = '保存',
+}: Props) {
+    // 文字列で保持（入力中の巻き戻り回避）
+    const [v, setV] = useState({
+        title: initial.title ?? '',
+        shipping_actual_yen:
+            initial.shipping_actual_yen != null ? String(initial.shipping_actual_yen) : '',
+        length_cm: initial.length_cm != null ? String(initial.length_cm) : '',
+        width_cm: initial.width_cm != null ? String(initial.width_cm) : '',
+        height_cm: initial.height_cm != null ? String(initial.height_cm) : '',
+        weight_g: initial.weight_g != null ? String(initial.weight_g) : '',
+        volume_cm3: initial.volume_cm3 != null ? String(initial.volume_cm3) : '',
+        carrier: initial.carrier ?? '',
+        amazon_size_label: initial.amazon_size_label ?? '',
+    });
 
-const submit = async (e: React.FormEvent) => {
-e.preventDefault();
-await onSubmit({
-...v,
-price: v.price === '' ? undefined : Number(v.price),
-cost: v.cost === '' ? undefined : Number(v.cost),
-length_cm: v.length_cm === '' ? undefined : Number(v.length_cm),
-width_cm: v.width_cm === '' ? undefined : Number(v.width_cm),
-height_cm: v.height_cm === '' ? undefined : Number(v.height_cm),
-weight_g: v.weight_g === '' ? undefined : Number(v.weight_g),
-shipping_actual_yen: v.shipping_actual_yen === '' ? undefined : Number(v.shipping_actual_yen),
-volume_cm3: v.volume_cm3 === '' ? undefined : Number(v.volume_cm3),
-});
-};
+    // ② ここから追加（トップレベルで！）
+    const renderRef = useRef(0);
+    const isComposingRef = useRef(false);
+    const skipNextChangeRef = useRef(false);
 
-const Input = (p: any) => <input {...p} className="border rounded px-3 py-2 w-full" />;
+    useEffect(() => {
+        console.log('[PF] mounted');
+        return () => console.log('[PF] unmounted');
+    }, []);
 
-return (
-<form onSubmit={submit} className="space-y-4">
-<div className="grid sm:grid-cols-2 gap-4">
-<div>
-<label className="block text-sm mb-1">商品名</label>
-<Input name="name" value={v.name} onChange={onChange} placeholder="商品名" required />
-</div>
-<div>
-<label className="block text-sm mb-1">実際送料(¥)</label>
-<Input name="shipping_actual_yen" value={v.shipping_actual_yen} onChange={onChange} inputMode="numeric" placeholder="例: 1200" />
-</div>
-<div>
-<label className="block text-sm mb-1">縦(cm)</label>
-<Input name="length_cm" value={v.length_cm} onChange={onChange} inputMode="numeric" />
-</div>
-<div>
-<label className="block text-sm mb-1">横(cm)</label>
-<Input name="width_cm" value={v.width_cm} onChange={onChange} inputMode="numeric" />
-</div>
-<div>
-<label className="block text-sm mb-1">高さ(cm)</label>
-<Input name="height_cm" value={v.height_cm} onChange={onChange} inputMode="numeric" />
-</div>
-<div>
-<label className="block text-sm mb-1">実際の重さ(g)</label>
-<Input name="weight_g" value={v.weight_g} onChange={onChange} inputMode="numeric" />
-</div>
-<div>
-<label className="block text-sm mb-1">体積(cm³)</label>
-<Input name="volume_cm3" value={v.volume_cm3} onChange={onChange} readOnly />
-</div>
-<div>
-<label className="block text-sm mb-1">配送会社</label>
-<Input name="carrier" value={v.carrier} onChange={onChange} placeholder="EMS / FedEx / 小型 など" />
-</div>
-<div className="sm:col-span-2">
-<label className="block text-sm mb-1">Amazonでのサイズ表記</label>
-<Input name="amazon_size_label" value={v.amazon_size_label} onChange={onChange} placeholder="例: 20 x 10 x 5 cm; 300 g" />
-</div>
-<div className="sm:col-span-2">
-<label className="block text-sm mb-1">備考</label>
-<textarea name="notes" value={v.notes} onChange={onChange} className="border rounded px-3 py-2 w-full" rows={3} />
-</div>
-</div>
-<button type="submit" className="rounded-xl bg-blue-600 text-white px-5 py-2.5">{submitLabel}</button>
-</form>
-);
+
+    const calcVolume = (lRaw: string, wRaw: string, hRaw: string) => {
+        const L = parseMaybe(lRaw);
+        const W = parseMaybe(wRaw);
+        const H = parseMaybe(hRaw);
+        if (L != null && W != null && H != null) {
+            return String(Math.round((L * W * H) / VOLUME_DIVISOR));
+        }
+        return '';
+    };
+
+    // 入力中は「絶対にサニタイズしない」—生の文字列をそのまま保存。
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const { name, value } = e.currentTarget;
+        console.log('[PF] change', { name, value, composing: isComposingRef.current });
+
+        setV(prev => {
+            const updated = { ...prev, [name]: value } as typeof prev;
+
+            // 体積は生計算（表示値は触らない）
+            if (name === 'length_cm' || name === 'width_cm' || name === 'height_cm') {
+                const L = name === 'length_cm' ? value : prev.length_cm;
+                const W = name === 'width_cm' ? value : prev.width_cm;
+                const H = name === 'height_cm' ? value : prev.height_cm;
+                updated.volume_cm3 = calcVolume(L, W, H);
+            }
+            return updated;
+        });
+    };
+
+    const handleCompositionStart = () => {
+        isComposingRef.current = true;
+    };
+    const handleCompositionEnd = (e: React.CompositionEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        isComposingRef.current = false;
+        normalizeField(e.currentTarget.name, e.currentTarget.value);
+    };
+    const handleBlur = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        normalizeField(e.currentTarget.name, e.currentTarget.value);
+    };
+
+    // フィールド確定時だけ正規化（半角化＋数字制限）して再セット
+    const normalizeField = (name: string, rawValue: string) => {
+        // 合成中は何もしない
+        if (isComposingRef.current) return;
+
+        const half = toHalfWidthNumeric(rawValue);
+        let next = half;
+        if (DECIMAL_FIELDS.has(name)) next = sanitizeDecimal(half);
+        else if (INT_FIELDS.has(name)) next = sanitizeInt(half);
+
+        setV(prev => {
+            const updated = { ...prev, [name]: next } as typeof prev;
+
+            if (name === 'length_cm' || name === 'width_cm' || name === 'height_cm') {
+                const L = name === 'length_cm' ? next : prev.length_cm;
+                const W = name === 'width_cm' ? next : prev.width_cm;
+                const H = name === 'height_cm' ? next : prev.height_cm;
+                updated.volume_cm3 = calcVolume(L, W, H);
+            }
+            return updated;
+        });
+    };
+
+    // 数値入力の共通コンポーネント（入力中は生で保持）
+    const NumericInput = ({
+        id, name, value, placeholder,
+    }: {
+        id: string; name: keyof typeof v; value: string; placeholder?: string;
+    }) => (
+        <input
+            id={id}
+            name={name as string}
+            type="text"
+            inputMode="decimal"
+            value={value}
+            onChange={handleChange}
+            onCompositionStart={handleCompositionStart}
+            onCompositionEnd={handleCompositionEnd}
+            onBlur={handleBlur}
+            autoComplete="off"
+            className="border rounded px-3 py-2 w-full"
+            placeholder={placeholder}
+        />
+    );
+
+    const submit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        const f = (s: string) => {
+            const half = toHalfWidthNumeric(s);
+            return half === '' ? undefined : parseFloat(sanitizeDecimal(half));
+        };
+        const i = (s: string) => {
+            const half = toHalfWidthNumeric(s);
+            return half === '' ? undefined : parseInt(sanitizeInt(half), 10);
+        };
+
+        await onSubmit({
+            title: v.title,
+            shipping_actual_yen: i(v.shipping_actual_yen), // 整数
+            length_cm: f(v.length_cm),                     // 少数OK
+            width_cm: f(v.width_cm),
+            height_cm: f(v.height_cm),
+            weight_g: f(v.weight_g),                       // 少数OK
+            volume_cm3: i(v.volume_cm3),                   // 自動計算→整数
+            carrier: v.carrier || undefined,
+            amazon_size_label: v.amazon_size_label || undefined,
+        });
+    };
+
+    return (
+        <form onSubmit={submit} className="space-y-6">
+            <div className="grid sm:grid-cols-2 gap-4">
+                <div className="sm:col-span-2">
+                    <label htmlFor="title" className="block text-sm font-medium">商品名</label>
+                    <input
+                        id="title"
+                        name="title"
+                        type="text"
+                        value={v.title}
+                        onChange={handleChange}
+                        onCompositionStart={handleCompositionStart}
+                        onCompositionEnd={handleCompositionEnd}
+                        onBlur={handleBlur}
+                        autoComplete="off"
+                        className="border rounded px-3 py-2 w-full"
+                        required
+                    />
+                </div>
+
+                <div>
+                    <label htmlFor="shipping_actual_yen" className="block text-sm font-medium">実際送料(¥)</label>
+                    <input
+                        id="shipping_actual_yen"
+                        name="shipping_actual_yen"
+                        type="text"
+                        inputMode="decimal"
+                        value={v.shipping_actual_yen}
+                        onChange={handleChange}
+                        onCompositionStart={handleCompositionStart}
+                        onCompositionEnd={handleCompositionEnd}
+                        onBlur={handleBlur}
+                        autoComplete="off"
+                        className="border rounded px-3 py-2 w-full"
+                    />
+                </div>
+
+                <div>
+                    <label htmlFor="length_cm" className="block text-sm font-medium">縦(cm)</label>
+                    <NumericInput id="length_cm" name="length_cm" value={v.length_cm} />
+                </div>
+
+                <div>
+                    <label htmlFor="width_cm" className="block text-sm font-medium">横(cm)</label>
+                    <NumericInput id="width_cm" name="width_cm" value={v.width_cm} />
+                </div>
+
+                <div>
+                    <label htmlFor="height_cm" className="block text-sm font-medium">高さ(cm)</label>
+                    <NumericInput id="height_cm" name="height_cm" value={v.height_cm} />
+                </div>
+
+                <div>
+                    <label htmlFor="weight_g" className="block text-sm font-medium">実際の重さ(g)</label>
+                    <NumericInput id="weight_g" name="weight_g" value={v.weight_g} />
+                </div>
+
+                <div>
+                    <label htmlFor="volume_cm3" className="block text-sm font-medium">
+                        体積(cm³) = 縦×横×高さ ÷ {VOLUME_DIVISOR}
+                    </label>
+                    <input
+                        id="volume_cm3"
+                        name="volume_cm3"
+                        value={v.volume_cm3}
+                        readOnly
+                        className="border rounded px-3 py-2 w-full bg-gray-50"
+                    />
+                </div>
+
+                <div>
+                    <label htmlFor="carrier" className="block text-sm font-medium">配送会社</label>
+                    <input
+                        id="carrier"
+                        name="carrier"
+                        type="text"
+                        value={v.carrier}
+                        onChange={handleChange}
+                        onCompositionStart={handleCompositionStart}
+                        onCompositionEnd={handleCompositionEnd}
+                        onBlur={handleBlur}
+                        autoComplete="off"
+                        className="border rounded px-3 py-2 w-full"
+                        placeholder="EMS / ePacket / FedEx など"
+                    />
+                </div>
+
+                <div className="sm:col-span-2">
+                    <label htmlFor="amazon_size_label" className="block text-sm font-medium">
+                        Amazonでのサイズ表記
+                    </label>
+                    <input
+                        id="amazon_size_label"
+                        name="amazon_size_label"
+                        type="text"
+                        value={v.amazon_size_label}
+                        onChange={handleChange}
+                        onCompositionStart={handleCompositionStart}
+                        onCompositionEnd={handleCompositionEnd}
+                        onBlur={handleBlur}
+                        autoComplete="off"
+                        className="border rounded px-3 py-2 w-full"
+                        placeholder="例: 20 x 10 x 5 cm; 300 g"
+                    />
+                </div>
+            </div>
+
+            <button type="submit" className="rounded-xl bg-blue-600 text-white px-5 py-2.5">
+                {submitLabel}
+            </button>
+        </form>
+    );
 }

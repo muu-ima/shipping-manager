@@ -1,17 +1,23 @@
 // src/app/products/[id]/page.tsx
 import ProductForm from '@/components/ProductForm';
 import { notFound } from 'next/navigation';
-import { headers } from 'next/headers'; // ← 追加
+import { wpFetch } from '@/lib/wp';
 
 async function getProduct(id: string) {
-  const h = await headers();    
-  const proto = h.get('x-forwarded-proto') ?? 'http';
-  const host = h.get('host')!;
-  const base = `${proto}://${host}`; // 絶対URLにする
+  // 数値ID以外は即 404
+  if (!/^\d+$/.test(id)) return null;
 
-  const res = await fetch(`${base}/api/products/${id}`, { cache: 'no-store' });
-  if (!res.ok) return null;
-  return res.json();
+  try {
+    const res = await wpFetch(`/wp-json/wp/v2/product/${id}`);
+    return await res.json();
+  } catch (e: any) {
+    // WP 404(rest_no_route) だけ握りつぶして null
+    const msg = String(e?.message || e);
+    if (msg.includes('"rest_no_route"') || msg.includes('WP 404')) {
+      return null;
+    }
+    throw e; // それ以外は本当の失敗
+  }
 }
 
 export default async function EditPage({ params }: { params: { id: string } }) {
