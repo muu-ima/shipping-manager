@@ -2,7 +2,6 @@ export type Product = {
 id: number;
 title: { rendered: string };
 meta: {
-sku?: string;
 price?: number;
 cost?: number;
 length_cm?: number;

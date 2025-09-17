@@ -19,28 +19,37 @@ export default async function ProductsPage() {
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="text-left border-b">
-              <th className="py-2 pr-4">ID</th>
-              <th className="py-2 pr-4">商品名</th>
-              <th className="py-2 pr-4">SKU</th>
-              <th className="py-2 pr-4">価格</th>
-              <th className="py-2 pr-4"></th>
+            <tr className="text-left border-b bg-gray-100">
+              <th className="py-2 px-3">ID</th>
+              <th className="py-2 px-3">商品名</th>
+              <th className="py-2 px-3 text-right">送料 (円)</th>
+              <th className="py-2 px-3 text-right">重さ (g)</th>
+              <th className="py-2 px-3 text-right">体積 (cm³)</th>
+              <th className="py-2 px-3">配送業者</th>
+              <th className="py-2 px-3">サイズラベル</th>
+              <th className="py-2 px-3">備考</th>
+              <th className="py-2 px-3"></th>
             </tr>
           </thead>
           <tbody>
             {items.map((p: any) => (
               <tr key={p.id} className="border-b hover:bg-gray-50">
-                <td className="py-2 pr-4">{p.id}</td>
-                <td className="py-2 pr-4">{p.title?.rendered}</td>
-                <td className="py-2 pr-4">{p.meta?.sku}</td>
-                <td className="py-2 pr-4">{p.meta?.price}</td>
-                <td className="py-2 pr-4">
-                  <Link className="text-blue-600 underline" href={`/products/${p.id}`}>編集</Link>
+                <td className="py-2 px-3">{p.id}</td>
+                <td className="py-2 px-3">{p.title?.rendered ?? '-'}</td>
+                <td className="py-2 px-3 text-right">{p.meta?.shipping_actual_yen ?? '-'}</td>
+                <td className="py-2 px-3 text-right">{p.meta?.weight_g ?? '-'}</td>
+                <td className="py-2 px-3 text-right">{p.meta?.volume_cm3 ?? '-'}</td>
+                <td className="py-2 px-3">{p.meta?.carrier ?? '-'}</td>
+                <td className="py-2 px-3">{p.meta?.amazon_size_label ?? '-'}</td>
+                <td className="py-2 px-3 whitespace-pre-line">{p.meta?.remark ?? '-'}</td>
+                <td className="py-2 px-3">
+                  <Link href={`/products/${p.id}`} className="text-blue-600 underline">
+                    編集
+                  </Link>
                 </td>
               </tr>
             ))}
-          </tbody>
-        </table>
+          </tbody>        </table>
       </div>
     </main>
   );

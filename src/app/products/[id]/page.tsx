@@ -26,7 +26,6 @@ export default async function EditPage({ params }: { params: { id: string } }) {
 
   const initial = {
     name: data.title?.rendered ?? '',
-    sku: data.meta?.sku ?? '',
     price: data.meta?.price ?? '',
     cost: data.meta?.cost ?? '',
     length_cm: data.meta?.length_cm ?? '',
