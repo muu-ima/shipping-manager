@@ -1,54 +1,51 @@
 // src/lib/wp.ts
-const base = process.env.WP_BASE_URL!;
-const user = process.env.WP_USER!;
-const appPwd = process.env.WP_APP_PASSWORD!;
+/**
+ * Typed WP fetch helper (no `any`)
+ * - Returns `Response`
+ * - Adds Basic Auth on the server (if WP_USER / WP_APP_PASS are set)
+ * - Prepends NEXT_PUBLIC_WP_ORIGIN to relative WP paths
+ */
 
-// 末尾/先頭スラなしで安全に結合
-function joinUrl(b: string, p: string) {
-  const B = b.replace(/\/+$/, '');
-  const P = p.replace(/^\/+/, '');
-  return `${B}/${P}`;
-}
+const WP_ORIGIN = (process.env.NEXT_PUBLIC_WP_ORIGIN ?? '').replace(/\/$/, '');
+const isServer = typeof window === 'undefined';
 
-function authHeader() {
-  const token = Buffer.from(`${user}:${appPwd}`).toString('base64');
-  return { Authorization: `Basic ${token}` };
-}
-
-export async function wpFetch(path: string, init?: RequestInit) {
-  const url = joinUrl(base, path);
-  const res = await fetch(url, {
-    ...init,
-    headers: {
-      'Content-Type': 'application/json',
-      ...authHeader(),
-      ...(init?.headers || {}),
-    },
-    // SSR/Route Handlersからのみ使う
-    cache: 'no-store',
-  });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`WP ${res.status}: ${text}`);
+function toHeaderRecord(h?: HeadersInit): Record<string, string> {
+  if (!h) return {};
+  if (Array.isArray(h)) return Object.fromEntries(h);
+  if (typeof Headers !== 'undefined' && h instanceof Headers) {
+    const obj: Record<string, string> = {};
+    h.forEach((v, k) => (obj[k] = v));
+    return obj;
   }
-  return res;
+  return { ...(h as Record<string, string>) };
 }
 
-/** /wp-json/wp/v2 を自動で付ける */
-export function wpV2(path: string) {
-  return joinUrl('/wp-json/wp/v2', path);
-}
-
-/** 404(rest_no_route) は throw せず null を返す安全版 */
-export async function wpTryJson(path: string, init?: RequestInit) {
-  try {
-    const res = await wpFetch(path, init);
-    return await res.json();
-  } catch (e: any) {
-    const msg = String(e?.message || e || '');
-    if (msg.includes('"rest_no_route"') || msg.includes('WP 404')) {
-      return null;
-    }
-    throw e;
+function authHeader(): Record<string, string> {
+  if (!isServer) return {};
+  const user = process.env.WP_USER;
+  const pass = process.env.WP_APP_PASS;
+  if (user && pass) {
+    const token = Buffer.from(`${user}:${pass}`).toString('base64');
+    return { Authorization: `Basic ${token}` };
   }
+  return {};
+}
+
+function withAuth(init?: RequestInit): RequestInit {
+  const merged: Record<string, string> = {
+    ...toHeaderRecord(init?.headers),
+    ...authHeader(),
+  };
+  return { ...init, headers: merged };
+}
+
+function normalizeUrl(input: string): string {
+  if (/^https?:\/\//i.test(input)) return input;
+  const path = input.startsWith('/') ? input : `/${input}`;
+  return `${WP_ORIGIN}${path}`;
+}
+
+export async function wpFetch(input: string, init?: RequestInit): Promise<Response> {
+  const url = normalizeUrl(input);
+  return fetch(url, withAuth(init));
 }

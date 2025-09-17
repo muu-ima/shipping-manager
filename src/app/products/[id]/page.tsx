@@ -1,70 +1,54 @@
-// src/app/products/[id]/page.tsx
-import ProductForm from '@/components/ProductForm';
 import { notFound } from 'next/navigation';
 import { wpFetch } from '@/lib/wp';
+import EditProductClient from './EditProductClient';
+import type { WPProduct } from '@/types/wp';
 
-async function getProduct(id: string) {
-  // 数値ID以外は即 404
+type Initial = {
+  title: string;
+  length_cm: number | string | null;
+  width_cm: number | string | null;
+  height_cm: number | string | null;
+  weight_g: number | string | null;
+  volume_cm3: number | string | null;
+  shipping_actual_yen: number | string | null;
+  carrier: string;
+  amazon_size_label: string;
+  remark: string;
+};
+
+async function getProduct(id: string): Promise<{ id: number; initial: Initial } | null> {
   if (!/^\d+$/.test(id)) return null;
 
-  try {
-    const res = await wpFetch(`/wp-json/wp/v2/product/${id}`);
-    return await res.json();
-  } catch (e: any) {
-    // WP 404(rest_no_route) だけ握りつぶして null
-    const msg = String(e?.message || e);
-    if (msg.includes('"rest_no_route"') || msg.includes('WP 404')) {
-      return null;
-    }
-    throw e; // それ以外は本当の失敗
-  }
+  const res = await wpFetch(`/wp-json/wp/v2/product/${id}`);
+  if (!res.ok) return null;
+
+  const p = (await res.json()) as WPProduct;
+
+  return {
+    id: p.id,
+    initial: {
+      title: p.title?.rendered ?? '',
+      length_cm: p.meta?.length_cm ?? null,
+      width_cm: p.meta?.width_cm ?? null,
+      height_cm: p.meta?.height_cm ?? null,
+      weight_g: p.meta?.weight_g ?? null,
+      volume_cm3: p.meta?.volume_cm3 ?? null,
+      shipping_actual_yen: p.meta?.shipping_actual_yen ?? null,
+      carrier: p.meta?.carrier ?? '',
+      amazon_size_label: p.meta?.amazon_size_label ?? '',
+      remark: p.meta?.remark ?? '',
+    },
+  };
 }
 
-export default async function EditPage({ params }: { params: { id: string } }) {
+export default async function Page({ params }: { params: { id: string } }) {
   const data = await getProduct(params.id);
   if (!data) return notFound();
 
-  const initial = {
-    name: data.title?.rendered ?? '',
-    price: data.meta?.price ?? '',
-    cost: data.meta?.cost ?? '',
-    length_cm: data.meta?.length_cm ?? '',
-    width_cm: data.meta?.width_cm ?? '',
-    height_cm: data.meta?.height_cm ?? '',
-    weight_g: data.meta?.weight_g ?? '',
-    carrier: data.meta?.carrier ?? '',
-    notes: data.meta?.notes ?? '',
-    shipping_actual_yen: data.meta?.shipping_actual_yen ?? '',
-    volume_cm3: data.meta?.volume_cm3 ?? '',
-    amazon_size_label: data.meta?.amazon_size_label ?? '',
-  };
-
   return (
-    <main className="mx-auto max-w-3xl p-6 space-y-6">
-      <h1 className="text-2xl font-bold">商品編集</h1>
-      <ProductForm
-        initial={initial}
-        submitLabel="更新"
-        onSubmit={async (values) => {
-          await fetch(`/api/products/${params.id}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(values),
-          });
-        }}
-      />
-      <form
-        action={`/api/products/${params.id}`}
-        method="post"
-        onSubmit={async (e) => {
-          e.preventDefault();
-          if (!confirm('削除しますか？')) return;
-          await fetch(`/api/products/${params.id}`, { method: 'DELETE' });
-          window.location.href = '/products';
-        }}
-      >
-        <button type="submit" className="rounded-xl bg-red-600 text-white px-4 py-2">削除</button>
-      </form>
+    <main className="mx-auto max-w-3xl p-6">
+      <h1 className="text-2xl font-bold mb-4">商品を編集</h1>
+      <EditProductClient id={data.id} initial={data.initial} />
     </main>
   );
 }

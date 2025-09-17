@@ -31,21 +31,22 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const body = (await request.json()) as IncomingProductBody;
 
-  // 必須: タイトル（name が来たらフォールバック）
+  // 必須: タイトル（name フォールバック）
   const title = (body.title ?? body.name ?? '').toString().trim();
   if (!title) {
     return new Response(JSON.stringify({ error: 'title is required' }), { status: 400 });
   }
 
-  // ヘルパー: 数値は未入力なら送らない（0を強制しない）
+  // 数値: 未入力は送らない（0強制しない）
   const num = (v: unknown): number | undefined => {
     if (v === '' || v === null || v === undefined) return undefined;
     const n = Number(v);
     return Number.isFinite(n) ? n : undefined;
   };
+  // 文字列
   const text = (v: unknown): string => (v == null ? '' : String(v));
 
-  // WPプラグインのキーと完全一致（price/notesは使わない）
+  // WPプラグインのキー名と完全一致
   const metaRaw = {
     cost: num(body.cost),
     length_cm: num(body.length_cm),
@@ -59,7 +60,7 @@ export async function POST(request: Request) {
     remark: text(body.remark),
   } satisfies Record<string, unknown>;
 
-  // undefined を落としてから送る
+  // undefined は落として送る
   const meta = Object.fromEntries(Object.entries(metaRaw).filter(([, v]) => v !== undefined));
 
   const res = await wpFetch(`/wp-json/wp/v2/product`, {

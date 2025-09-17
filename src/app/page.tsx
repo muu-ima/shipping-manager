@@ -1,6 +1,7 @@
 // src/app/products/page.tsx
 import Link from 'next/link';
 import { wpFetch } from '@/lib/wp';
+import type { WPProduct } from '@/types/wp';
 
 async function getProducts() {
   // ← 相対URL /api/products をやめて、WPを直叩き
@@ -17,7 +18,7 @@ export default async function ProductsPage() {
         <Link href="/products/new" className="rounded-xl bg-black text-white px-4 py-2">新規</Link>
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full text-sm suppressHydrationWarning">
           <thead>
             <tr className="text-left border-b bg-gray-100">
               <th className="py-2 px-3">ID</th>
@@ -32,7 +33,7 @@ export default async function ProductsPage() {
             </tr>
           </thead>
           <tbody>
-            {items.map((p: any) => (
+            {items.map((p: WPProduct) => (
               <tr key={p.id} className="border-b hover:bg-gray-50">
                 <td className="py-2 px-3">{p.id}</td>
                 <td className="py-2 px-3">{p.title?.rendered ?? '-'}</td>

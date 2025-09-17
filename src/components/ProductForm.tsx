@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 type NumericKeys =
     | 'shipping_actual_yen'
@@ -68,12 +68,6 @@ function normalizeNumericInput(s: string): string {
     return t;
 }
 
-/** 体積（cm^3） */
-function calcVolumeCm3(L: number, W: number, H: number): number {
-    const v = L * W * H;
-    return Number.isFinite(v) ? v : NaN;
-}
-
 export default function ProductForm({
     initial,
     submitLabel = '保存',
@@ -97,6 +91,12 @@ export default function ProductForm({
     /** 編集中の key（計算が打鍵を潰さないように） */
     const editingKeyRef = useRef<keyof FormState | null>(null);
 
+    // ★ これを追加（前回の寸法キーを保持）
+    const prevDimsRef = useRef<string>('');
+
+    // ★ これを追加（現在の寸法キー）
+    const dimsKey = `${form.length_cm}|${form.width_cm}|${form.height_cm}`;
+
     const setField = (key: keyof FormState, value: string) =>
         setForm((prev) => ({ ...prev, [key]: value }));
 
@@ -114,32 +114,38 @@ export default function ProductForm({
                 setField(key, normalizeNumericInput(e.target.value));
             };
 
-    const depsKey = useMemo(
-        () => `${form.length_cm}|${form.width_cm}|${form.height_cm}`,
-        [form.length_cm, form.width_cm, form.height_cm]
-    );
 
 
-    /**
+    /*
  * 計算ルール
  * - 実際の重さ (g) = ユーザーが手入力
  * - 体積 (cm³) = 長さ×幅×高さ を自動計算
  */
     useEffect(() => {
         const t = setTimeout(() => {
+            // 長さ/幅/高さを編集中なら触らない
+            if (['length_cm', 'width_cm', 'height_cm'].includes(editingKeyRef.current ?? '')) {
+                return;
+            }
+
+            // 変化がなければ何もしない（無駄なsetStateを抑止）
+            if (prevDimsRef.current === dimsKey) return;
+            prevDimsRef.current = dimsKey;
+
+            const toNumOrNull = (v: unknown) => {
+                if (v === '' || v == null) return null;
+                const n = Number(v);
+                return Number.isFinite(n) ? n : null;
+            };
+
             const L = toNumOrNull(form.length_cm);
             const W = toNumOrNull(form.width_cm);
             const H = toNumOrNull(form.height_cm);
 
-            // デバッグ確認
-            console.log('auto volume_cm3:', { L, W, H });
-
             if (L != null && W != null && H != null) {
-                const volume = (H * W * L) / 5;
-                if (Number.isFinite(volume)) {
-                    setField('volume_cm3', String(Math.round(volume)));
-                } else {
-                    setField('volume_cm3', '');
+                const autoWeightG = (H * W * L) / 5; // 要件: 高さ*幅*長さ/5
+                if (Number.isFinite(autoWeightG)) {
+                    setField('weight_g', String(Math.round(autoWeightG)));
                 }
             } else {
                 setField('weight_g', '');
@@ -147,7 +153,8 @@ export default function ProductForm({
         }, 200);
 
         return () => clearTimeout(t);
-    }, [form.length_cm, form.width_cm, form.height_cm]);
+    }, [dimsKey]); // ★ 依存は dimsKey だけ
+
 
 
     const onBlurAny = () => {
@@ -181,7 +188,7 @@ export default function ProductForm({
                         value={form.title}
                         onChange={onTextChange('title')}
                         placeholder="例：Tシャツ"
-                        required 
+                        required
                     />
                 </label>
 
