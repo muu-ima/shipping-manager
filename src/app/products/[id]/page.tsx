@@ -9,7 +9,7 @@ type Initial = {
   width_cm: number | string | null;
   height_cm: number | string | null;
   weight_g: number | string | null;
-  volume_cm3: number | string | null;
+  applied_weight_g: number | string | null;
   shipping_actual_yen: number | string | null;
   carrier: string;
   amazon_size_label: string;
@@ -32,7 +32,7 @@ async function getProduct(id: string): Promise<{ id: number; initial: Initial } 
       width_cm: p.meta?.width_cm ?? null,
       height_cm: p.meta?.height_cm ?? null,
       weight_g: p.meta?.weight_g ?? null,
-      volume_cm3: p.meta?.volume_cm3 ?? null,
+      applied_weight_g: p.meta?.applied_weight_g ?? null,
       shipping_actual_yen: p.meta?.shipping_actual_yen ?? null,
       carrier: p.meta?.carrier ?? '',
       amazon_size_label: p.meta?.amazon_size_label ?? '',
