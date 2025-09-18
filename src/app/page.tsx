@@ -18,14 +18,16 @@ export default async function ProductsPage() {
         <Link href="/products/new" className="rounded-xl bg-black text-white px-4 py-2">新規</Link>
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full text-sm suppressHydrationWarning">
+        <table className="w-full text-sm">
           <thead>
             <tr className="text-left border-b bg-gray-100">
               <th className="py-2 px-3">ID</th>
               <th className="py-2 px-3">商品名</th>
               <th className="py-2 px-3 text-right">送料 (円)</th>
+              <th className="py-2 px-3 text-right">縦 (cm)</th>
+              <th className="py-2 px-3 text-right">横 (cm)</th>
+              <th className="py-2 px-3 text-right">幅 (cm)</th>
               <th className="py-2 px-3 text-right">重さ (g)</th>
-              <th className="py-2 px-3 text-right">体積 (cm³)</th>
               <th className="py-2 px-3">配送業者</th>
               <th className="py-2 px-3">サイズラベル</th>
               <th className="py-2 px-3">備考</th>
@@ -38,8 +40,10 @@ export default async function ProductsPage() {
                 <td className="py-2 px-3">{p.id}</td>
                 <td className="py-2 px-3">{p.title?.rendered ?? '-'}</td>
                 <td className="py-2 px-3 text-right">{p.meta?.shipping_actual_yen ?? '-'}</td>
+                <td className="py-2 px-3 text-right">{p.meta?.height_cm ?? '-'}</td>
+                <td className="py-2 px-3 text-right">{p.meta?.width_cm ?? '-'}</td>
+                <td className="py-2 px-3 text-right">{p.meta?.length_cm ?? '-'}</td>
                 <td className="py-2 px-3 text-right">{p.meta?.weight_g ?? '-'}</td>
-                <td className="py-2 px-3 text-right">{p.meta?.volume_cm3 ?? '-'}</td>
                 <td className="py-2 px-3">{p.meta?.carrier ?? '-'}</td>
                 <td className="py-2 px-3">{p.meta?.amazon_size_label ?? '-'}</td>
                 <td className="py-2 px-3 whitespace-pre-line">{p.meta?.remark ?? '-'}</td>
@@ -50,7 +54,8 @@ export default async function ProductsPage() {
                 </td>
               </tr>
             ))}
-          </tbody>        </table>
+          </tbody>        
+        </table>
       </div>
     </main>
   );

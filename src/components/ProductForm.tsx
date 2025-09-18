@@ -2,13 +2,20 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 
+const SHEETS = [
+    { key: 'keln', label: 'ケルン用', id: 3 },
+    { key: 'cocconiel', label: 'コッコニール用', id: 4 },
+    { key: 'signpost', label: 'サインポスト用', id: 5 },
+] as const;
+type SheetKey = (typeof SHEETS)[number]['key'];
+
 type NumericKeys =
     | 'shipping_actual_yen'
     | 'length_cm'
     | 'width_cm'
     | 'height_cm'
     | 'weight_g'
-    | 'volume_cm3';
+    | 'applied_weight_g';
 
 type FormState = {
     title: string;
@@ -17,7 +24,7 @@ type FormState = {
     width_cm: string;
     height_cm: string;
     weight_g: string;
-    volume_cm3: string; // 自動計算だが表示は string
+    applied_weight_g: string;
     carrier: string;
     amazon_size_label: string;
     remark: string;
@@ -30,10 +37,11 @@ type SubmitPayload = {
     width_cm: number | null;
     height_cm: number | null;
     weight_g: number | null;
-    volume_cm3: number | null;
+    applied_weight_g: number | null;
     carrier: string;
     amazon_size_label: string;
     remark: string;
+    product_sheet: number[];
 };
 
 type Props = {
@@ -41,6 +49,7 @@ type Props = {
     submitLabel?: string;
     onSubmit: (payload: SubmitPayload) => Promise<void> | void;
     onCancel?: () => void;
+    defaultSheetKey?: SheetKey;
 };
 
 /** 空 or 非数なら null */
@@ -73,7 +82,10 @@ export default function ProductForm({
     submitLabel = '保存',
     onSubmit,
     onCancel,
+    defaultSheetKey = 'keln',
 }: Props) {
+    const [sheetKey, setSheetKey] = useState<SheetKey>(defaultSheetKey);
+    const sheetId = SHEETS.find((s) => s.key === sheetKey)!.id;
     const [form, setForm] = useState<FormState>(() => ({
         title: (initial?.title ?? '') as string,
         shipping_actual_yen:
@@ -82,7 +94,7 @@ export default function ProductForm({
         width_cm: initial?.width_cm != null ? String(initial.width_cm) : '',
         height_cm: initial?.height_cm != null ? String(initial.height_cm) : '',
         weight_g: initial?.weight_g != null ? String(initial.weight_g) : '',
-        volume_cm3: initial?.volume_cm3 != null ? String(initial.volume_cm3) : '',
+        applied_weight_g: initial?.applied_weight_g != null ? String(initial.applied_weight_g) : '',
         carrier: (initial?.carrier ?? '') as string,
         amazon_size_label: (initial?.amazon_size_label ?? '') as string,
         remark: (initial?.remark ?? '') as string,
@@ -114,8 +126,6 @@ export default function ProductForm({
                 setField(key, normalizeNumericInput(e.target.value));
             };
 
-
-
     /*
  * 計算ルール
  * - 実際の重さ (g) = ユーザーが手入力
@@ -123,39 +133,20 @@ export default function ProductForm({
  */
     useEffect(() => {
         const t = setTimeout(() => {
-            // 長さ/幅/高さを編集中なら触らない
-            if (['length_cm', 'width_cm', 'height_cm'].includes(editingKeyRef.current ?? '')) {
-                return;
-            }
-
-            // 変化がなければ何もしない（無駄なsetStateを抑止）
-            if (prevDimsRef.current === dimsKey) return;
-            prevDimsRef.current = dimsKey;
-
-            const toNumOrNull = (v: unknown) => {
-                if (v === '' || v == null) return null;
-                const n = Number(v);
-                return Number.isFinite(n) ? n : null;
-            };
-
             const L = toNumOrNull(form.length_cm);
             const W = toNumOrNull(form.width_cm);
             const H = toNumOrNull(form.height_cm);
 
             if (L != null && W != null && H != null) {
-                const autoWeightG = (H * W * L) / 5; // 要件: 高さ*幅*長さ/5
-                if (Number.isFinite(autoWeightG)) {
-                    setField('weight_g', String(Math.round(autoWeightG)));
-                }
+                const applied = Math.round((L * W * H) / 5);
+                setField('applied_weight_g', String(applied));
             } else {
-                setField('weight_g', '');
+                setField('applied_weight_g', '');
             }
         }, 200);
 
         return () => clearTimeout(t);
-    }, [dimsKey]); // ★ 依存は dimsKey だけ
-
-
+    }, [form.length_cm, form.width_cm, form.height_cm]);
 
     const onBlurAny = () => {
         editingKeyRef.current = null;
@@ -170,16 +161,30 @@ export default function ProductForm({
             width_cm: toNumOrNull(form.width_cm),
             height_cm: toNumOrNull(form.height_cm),
             weight_g: toNumOrNull(form.weight_g),
-            volume_cm3: toNumOrNull(form.volume_cm3),
+            applied_weight_g: toNumOrNull(form.applied_weight_g),
             carrier: form.carrier.trim(),
             amazon_size_label: form.amazon_size_label.trim(),
             remark: form.remark.trim(),
+            product_sheet: [sheetId],
         };
         await onSubmit(payload);
     };
 
     return (
-        <form onSubmit={handleSubmit} onBlur={onBlurAny} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="inline-flex rounded-xl border p-1 bg-white">
+                {SHEETS.map((s) => (
+                    <button
+                        key={s.key}
+                        type="button"
+                        onClick={() => setSheetKey(s.key)}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium ${sheetKey === s.key ? 'bg-black text-white' : 'text-gray-700 hover:bg-gray-100'
+                            }`}
+                    >
+                        {s.label}
+                    </button>
+                ))}
+            </div>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <label className="flex flex-col gap-1 sm:col-span-2">
                     <span className="text-sm text-gray-600">商品名（title）</span>
@@ -240,21 +245,21 @@ export default function ProductForm({
                 <label className="flex flex-col gap-1">
                     <span className="text-sm text-gray-600">実際の重さ (g)</span>
                     <input
-                        className="rounded-md border px-3 py-2 bg-gray-50"
+                        className="rounded-md border px-3 py-2"
+                        inputMode="decimal"
+                        required
                         value={form.weight_g}
                         onChange={onNumberChange('weight_g')}
-                        placeholder="350g"
+                        placeholder="例：350"
                     />
                 </label>
                 <label className="flex flex-col gap-1">
-                    <span className="text-sm text-gray-600">体積（cm³）</span>
+                    <span className="text-sm text-gray-600">適用容量 (g)</span>
                     <input
-                        className="rounded-md border px-3 py-2"
+                        className="rounded-md border px-3 py-2 bg-gray-50"
                         readOnly
-                        value={form.volume_cm3}
-                        onChange={onNumberChange('volume_cm3')}
-                        placeholder="高さ×幅×長さ÷5 で自動計算"
-                        tabIndex={-1}
+                        value={form.applied_weight_g}
+                        placeholder="長さ×幅×高さ÷5 で自動計算"
                     />
                 </label>
 

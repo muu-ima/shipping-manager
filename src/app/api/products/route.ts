@@ -9,11 +9,12 @@ type IncomingProductBody = {
   width_cm?: number | string | null;
   height_cm?: number | string | null;
   weight_g?: number | string | null;
-  volume_cm3?: number | string | null;
+  applied_weight_g?: number | string | null;
   shipping_actual_yen?: number | string | null;
   carrier?: string | null;
   amazon_size_label?: string | null;
   remark?: string | null;
+  product_sheet?: number[];
 };
 
 export async function GET(request: Request) {
@@ -53,7 +54,7 @@ export async function POST(request: Request) {
     width_cm: num(body.width_cm),
     height_cm: num(body.height_cm),
     weight_g: num(body.weight_g),
-    volume_cm3: num(body.volume_cm3),
+    applied_weight_g: num(body.applied_weight_g),
     shipping_actual_yen: num(body.shipping_actual_yen),
     carrier: text(body.carrier),
     amazon_size_label: text(body.amazon_size_label),
@@ -63,10 +64,18 @@ export async function POST(request: Request) {
   // undefined は落として送る
   const meta = Object.fromEntries(Object.entries(metaRaw).filter(([, v]) => v !== undefined));
 
+  const product_sheet =
+    Array.isArray(body.product_sheet)
+      ? body.product_sheet.map((v) => Number(v)).filter((n) => Number.isFinite(n))
+      : undefined;
+
+  console.log('POST body', { title, meta });
   const res = await wpFetch(`/wp-json/wp/v2/product`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ title, status: 'publish', meta }),
+    body: JSON.stringify({ title, status: 'publish', meta,
+        ...(product_sheet && product_sheet.length ? { product_sheet } : {}), 
+     }),
   });
 
   const created = await res.json();

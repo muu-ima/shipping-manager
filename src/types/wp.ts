@@ -6,7 +6,7 @@ export interface ProductMeta {
   width_cm?: number | string | null;
   height_cm?: number | string | null;
   weight_g?: number | string | null;
-  volume_cm3?: number | string | null;
+  applied_weight_g?: number;
   shipping_actual_yen?: number | string | null;
   carrier?: string | null;
   amazon_size_label?: string | null;

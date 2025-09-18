@@ -23,7 +23,7 @@ function toHeaderRecord(h?: HeadersInit): Record<string, string> {
 function authHeader(): Record<string, string> {
   if (!isServer) return {};
   const user = process.env.WP_USER;
-  const pass = process.env.WP_APP_PASS;
+  const pass = process.env.WP_APP_PASS ?? process.env.WP_APP_PASSWORD;
   if (user && pass) {
     const token = Buffer.from(`${user}:${pass}`).toString('base64');
     return { Authorization: `Basic ${token}` };
