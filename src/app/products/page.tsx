@@ -14,28 +14,60 @@ const fmtNum = (v: unknown) =>
   v === null || v === undefined || v === '' || v === 0 || v === '0'
     ? '-'
     : new Intl.NumberFormat('ja-JP').format(Number(v));
-
 const fmtTxt = (v: unknown) => (v === null || v === undefined || v === '' ? '-' : String(v));
 
-/** 検索APIレスポンス（検索プラグインの形に合わせる） */
+/* ===== 型定義（any禁止・WP標準/自作RESTの両対応） ===== */
+type ProductMeta = {
+  shipping_actual_yen?: number | string;
+  length_cm?: number | string;
+  width_cm?: number | string;
+  height_cm?: number | string;
+  weight_g?: number | string;
+  applied_weight_g?: number | string;
+  carrier?: string;
+  amazon_size_label?: string;
+  remark?: string;
+};
+
+type SearchItem = WPProduct & {
+  title?: string | { rendered?: string };
+  product_sheet?: Array<{ name: string; slug: string; term_id?: number }>;
+
+  // 自作RESTがトップレベルで返す場合
+  shipping_actual_yen?: number | string;
+  length_cm?: number | string;
+  width_cm?: number | string;
+  height_cm?: number | string;
+  weight_g?: number | string;
+  applied_weight_g?: number | string;
+  carrier?: string;
+  amazon_size_label?: string;
+  remark?: string;
+
+  // WP標準の meta オブジェクトが来る場合
+  meta?: ProductMeta;
+};
+
 type SearchResponse = {
-  data: Array<
-    WPProduct & {
-      title?: string | { rendered?: string };
-      product_sheet?: Array<{ name: string; slug: string; term_id?: number }>;
-      carrier?: string;
-      amazon_size_label?: string;
-      shipping_actual_yen?: number;
-      length_cm?: number;
-      width_cm?: number;
-      height_cm?: number;
-      weight_g?: number;
-      applied_weight_g?: number;
-    }
-  >;
+  data: SearchItem[];
   meta?: { total: number; pages: number; page: number; perPage: number };
 };
 
+function normalizeMeta(p: SearchItem): ProductMeta {
+  return {
+    shipping_actual_yen: p.meta?.shipping_actual_yen ?? p.shipping_actual_yen,
+    length_cm:          p.meta?.length_cm          ?? p.length_cm,
+    width_cm:           p.meta?.width_cm           ?? p.width_cm,
+    height_cm:          p.meta?.height_cm          ?? p.height_cm,
+    weight_g:           p.meta?.weight_g           ?? p.weight_g,
+    applied_weight_g:   p.meta?.applied_weight_g   ?? p.applied_weight_g,
+    carrier:            p.meta?.carrier            ?? p.carrier,
+    amazon_size_label:  p.meta?.amazon_size_label  ?? p.amazon_size_label,
+    remark:             p.meta?.remark             ?? p.remark,
+  };
+}
+
+/* ===== データ取得 ===== */
 async function getProducts(params: Record<string, string | undefined>): Promise<SearchResponse> {
   const p = new URLSearchParams();
   Object.entries(params).forEach(([k, v]) => {
@@ -55,12 +87,13 @@ async function getProducts(params: Record<string, string | undefined>): Promise<
   return res.json();
 }
 
+/* ===== クエリ型 ===== */
 type SearchQuery = {
   sheet?: string;
 
   // 10項目に対応する検索パラメータ
-  id?: string; // ID完全一致
-  q?: string;  // 商品名（タイトル）部分一致
+  id?: string;  // ID完全一致
+  q?: string;   // 商品名（タイトル）部分一致
   shipping_actual_yen_min?: string;
   shipping_actual_yen_max?: string;
   length_cm_min?: string;  length_cm_max?: string;
@@ -133,135 +166,38 @@ export default async function ProductsPage({
         <input type="hidden" name="sheet" value={sheet} />
         <div className="grid gap-3 sm:grid-cols-6">
           {/* ID */}
-          <input
-            name="id"
-            defaultValue={sp.id ?? ''}
-            inputMode="numeric"
-            className="border rounded-xl px-3 py-2"
-            placeholder="ID"
-          />
+          <input name="id" defaultValue={sp.id ?? ''} inputMode="numeric" className="border rounded-xl px-3 py-2" placeholder="ID" />
 
           {/* 商品名（タイトル） */}
-          <input
-            name="q"
-            defaultValue={sp.q ?? ''}
-            className="border rounded-xl px-3 py-2 sm:col-span-2"
-            placeholder="商品名（部分一致）"
-          />
+          <input name="q" defaultValue={sp.q ?? ''} className="border rounded-xl px-3 py-2 sm:col-span-2" placeholder="商品名（部分一致）" />
 
           {/* 配送業者 */}
-          <input
-            name="carrier"
-            defaultValue={sp.carrier ?? ''}
-            className="border rounded-xl px-3 py-2"
-            placeholder="配送業者（例: EMS）"
-          />
+          <input name="carrier" defaultValue={sp.carrier ?? ''} className="border rounded-xl px-3 py-2" placeholder="配送業者（例: EMS）" />
 
           {/* サイズラベル */}
-          <input
-            name="amazon_size_label"
-            defaultValue={sp.amazon_size_label ?? ''}
-            className="border rounded-xl px-3 py-2"
-            placeholder="サイズラベル（例: medium）"
-          />
+          <input name="amazon_size_label" defaultValue={sp.amazon_size_label ?? ''} className="border rounded-xl px-3 py-2" placeholder="サイズラベル（例: medium）" />
 
           {/* 送料 (円) */}
-          <input
-            name="shipping_actual_yen_min"
-            defaultValue={sp.shipping_actual_yen_min ?? ''}
-            inputMode="numeric"
-            className="border rounded-xl px-3 py-2"
-            placeholder="送料 最小(円)"
-          />
-          <input
-            name="shipping_actual_yen_max"
-            defaultValue={sp.shipping_actual_yen_max ?? ''}
-            inputMode="numeric"
-            className="border rounded-xl px-3 py-2"
-            placeholder="送料 最大(円)"
-          />
+          <input name="shipping_actual_yen_min" defaultValue={sp.shipping_actual_yen_min ?? ''} inputMode="numeric" className="border rounded-xl px-3 py-2" placeholder="送料 最小(円)" />
+          <input name="shipping_actual_yen_max" defaultValue={sp.shipping_actual_yen_max ?? ''} inputMode="numeric" className="border rounded-xl px-3 py-2" placeholder="送料 最大(円)" />
 
           {/* 長さ / 幅 / 高さ (cm) */}
-          <input
-            name="length_cm_min"
-            defaultValue={sp.length_cm_min ?? ''}
-            inputMode="numeric"
-            className="border rounded-xl px-3 py-2"
-            placeholder="長さ 最小(cm)"
-          />
-          <input
-            name="length_cm_max"
-            defaultValue={sp.length_cm_max ?? ''}
-            inputMode="numeric"
-            className="border rounded-xl px-3 py-2"
-            placeholder="長さ 最大(cm)"
-          />
-          <input
-            name="width_cm_min"
-            defaultValue={sp.width_cm_min ?? ''}
-            inputMode="numeric"
-            className="border rounded-xl px-3 py-2"
-            placeholder="幅 最小(cm)"
-          />
-          <input
-            name="width_cm_max"
-            defaultValue={sp.width_cm_max ?? ''}
-            inputMode="numeric"
-            className="border rounded-xl px-3 py-2"
-            placeholder="幅 最大(cm)"
-          />
-          <input
-            name="height_cm_min"
-            defaultValue={sp.height_cm_min ?? ''}
-            inputMode="numeric"
-            className="border rounded-xl px-3 py-2"
-            placeholder="高さ 最小(cm)"
-          />
-          <input
-            name="height_cm_max"
-            defaultValue={sp.height_cm_max ?? ''}
-            inputMode="numeric"
-            className="border rounded-xl px-3 py-2"
-            placeholder="高さ 最大(cm)"
-          />
+          <input name="length_cm_min"  defaultValue={sp.length_cm_min  ?? ''} inputMode="numeric" className="border rounded-xl px-3 py-2" placeholder="長さ 最小(cm)" />
+          <input name="length_cm_max"  defaultValue={sp.length_cm_max  ?? ''} inputMode="numeric" className="border rounded-xl px-3 py-2" placeholder="長さ 最大(cm)" />
+          <input name="width_cm_min"   defaultValue={sp.width_cm_min   ?? ''} inputMode="numeric" className="border rounded-xl px-3 py-2" placeholder="幅 最小(cm)" />
+          <input name="width_cm_max"   defaultValue={sp.width_cm_max   ?? ''} inputMode="numeric" className="border rounded-xl px-3 py-2" placeholder="幅 最大(cm)" />
+          <input name="height_cm_min"  defaultValue={sp.height_cm_min  ?? ''} inputMode="numeric" className="border rounded-xl px-3 py-2" placeholder="高さ 最小(cm)" />
+          <input name="height_cm_max"  defaultValue={sp.height_cm_max  ?? ''} inputMode="numeric" className="border rounded-xl px-3 py-2" placeholder="高さ 最大(cm)" />
 
           {/* 実重量 / 適用容量 (g) */}
-          <input
-            name="weight_g_min"
-            defaultValue={sp.weight_g_min ?? ''}
-            inputMode="numeric"
-            className="border rounded-xl px-3 py-2"
-            placeholder="実重量 最小(g)"
-          />
-          <input
-            name="weight_g_max"
-            defaultValue={sp.weight_g_max ?? ''}
-            inputMode="numeric"
-            className="border rounded-xl px-3 py-2"
-            placeholder="実重量 最大(g)"
-          />
-          <input
-            name="applied_weight_g_min"
-            defaultValue={sp.applied_weight_g_min ?? ''}
-            inputMode="numeric"
-            className="border rounded-xl px-3 py-2"
-            placeholder="適用容量 最小(g)"
-          />
-          <input
-            name="applied_weight_g_max"
-            defaultValue={sp.applied_weight_g_max ?? ''}
-            inputMode="numeric"
-            className="border rounded-xl px-3 py-2"
-            placeholder="適用容量 最大(g)"
-          />
+          <input name="weight_g_min"         defaultValue={sp.weight_g_min ?? ''}         inputMode="numeric" className="border rounded-xl px-3 py-2" placeholder="実重量 最小(g)" />
+          <input name="weight_g_max"         defaultValue={sp.weight_g_max ?? ''}         inputMode="numeric" className="border rounded-xl px-3 py-2" placeholder="実重量 最大(g)" />
+          <input name="applied_weight_g_min" defaultValue={sp.applied_weight_g_min ?? ''} inputMode="numeric" className="border rounded-xl px-3 py-2" placeholder="適用容量 最小(g)" />
+          <input name="applied_weight_g_max" defaultValue={sp.applied_weight_g_max ?? ''} inputMode="numeric" className="border rounded-xl px-3 py-2" placeholder="適用容量 最大(g)" />
 
           <div className="sm:col-span-6 flex items-center gap-3">
             <button type="submit" className="rounded-xl bg-black text-white px-4 py-2">絞り込む</button>
-            <Link
-              href={{ pathname: '/products', query: { sheet } }}
-              prefetch={false}
-              className="rounded-xl border px-4 py-2"
-            >
+            <Link href={{ pathname: '/products', query: { sheet } }} prefetch={false} className="rounded-xl border px-4 py-2">
               絞り込みをクリア
             </Link>
             <div className="ml-auto text-sm text-gray-600">
@@ -298,21 +234,21 @@ export default async function ProductsPage({
             ) : (
               items.map((p) => {
                 const title = (typeof p.title === 'string' ? p.title : p.title?.rendered) ?? '-';
-                const metaObj = (p as any).meta ?? p;
+                const metaObj = normalizeMeta(p);
 
                 return (
                   <tr key={p.id} className="border-b hover:bg-gray-50">
                     <td className="py-2 px-3">{p.id}</td>
                     <td className="py-2 px-3">{title}</td>
-                    <td className="py-2 px-3 text-right">{fmtNum(metaObj?.shipping_actual_yen)}</td>
-                    <td className="py-2 px-3 text-right">{fmtNum(metaObj?.length_cm)}</td>
-                    <td className="py-2 px-3 text-right">{fmtNum(metaObj?.width_cm)}</td>
-                    <td className="py-2 px-3 text-right">{fmtNum(metaObj?.height_cm)}</td>
-                    <td className="py-2 px-3 text-right">{fmtNum(metaObj?.weight_g)}</td>
-                    <td className="py-2 px-3 text-right">{fmtNum(metaObj?.applied_weight_g)}</td>
-                    <td className="py-2 px-3">{fmtTxt(metaObj?.carrier)}</td>
-                    <td className="py-2 px-3">{fmtTxt(metaObj?.amazon_size_label)}</td>
-                    <td className="py-2 px-3 whitespace-pre-line">{fmtTxt(metaObj?.remark)}</td>
+                    <td className="py-2 px-3 text-right">{fmtNum(metaObj.shipping_actual_yen)}</td>
+                    <td className="py-2 px-3 text-right">{fmtNum(metaObj.length_cm)}</td>
+                    <td className="py-2 px-3 text-right">{fmtNum(metaObj.width_cm)}</td>
+                    <td className="py-2 px-3 text-right">{fmtNum(metaObj.height_cm)}</td>
+                    <td className="py-2 px-3 text-right">{fmtNum(metaObj.weight_g)}</td>
+                    <td className="py-2 px-3 text-right">{fmtNum(metaObj.applied_weight_g)}</td>
+                    <td className="py-2 px-3">{fmtTxt(metaObj.carrier)}</td>
+                    <td className="py-2 px-3">{fmtTxt(metaObj.amazon_size_label)}</td>
+                    <td className="py-2 px-3 whitespace-pre-line">{fmtTxt(metaObj.remark)}</td>
                     <td className="py-2 px-3">
                       <Link href={`/products/${p.id}`} prefetch={false} className="text-blue-600 underline">
                         編集
