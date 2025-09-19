@@ -18,14 +18,23 @@ type IncomingProductBody = {
 };
 
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const page = searchParams.get('page') ?? '1';
-  const per_page = searchParams.get('per_page') ?? '20';
-  const search = searchParams.get('search') ?? '';
+  const url = new URL(request.url);
 
-  const qs = new URLSearchParams({ per_page, page, ...(search ? { search } : {}) });
-  const res = await wpFetch(`/wp-json/wp/v2/product?${qs.toString()}`);
+  // 受け取ったクエリをそのまま転送（空は除外）
+  const params = new URLSearchParams();
+  url.searchParams.forEach((v, k) => {
+    if (v !== '') params.set(k, v);
+  });
+
+  // デフォルト
+  if (!params.has('page')) params.set('page', '1');
+  if (!params.has('per_page')) params.set('per_page', '20');
+
+  // ★ WP標準の /wp/v2/product ではなく、検索用プラグインのRESTを叩く
+  const res = await wpFetch(`/wp-json/shipping/v1/search?${params.toString()}`);
+
   const data = await res.json();
+  // 検索RESTのレスポンス（{ data, meta }）をそのまま返す
   return new Response(JSON.stringify(data), { status: res.status });
 }
 
