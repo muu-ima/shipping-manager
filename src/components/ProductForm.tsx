@@ -27,7 +27,7 @@ type FormState = {
     applied_weight_g: string;
     carrier: string;
     amazon_size_label: string;
-    remark: string;
+    child_category: string;
 };
 
 type SubmitPayload = {
@@ -40,7 +40,7 @@ type SubmitPayload = {
     applied_weight_g: number | null;
     carrier: string;
     amazon_size_label: string;
-    remark: string;
+    child_category: string; 
     product_sheet: number[];
 };
 
@@ -97,7 +97,7 @@ export default function ProductForm({
         applied_weight_g: initial?.applied_weight_g != null ? String(initial.applied_weight_g) : '',
         carrier: (initial?.carrier ?? '') as string,
         amazon_size_label: (initial?.amazon_size_label ?? '') as string,
-        remark: (initial?.remark ?? '') as string,
+        child_category: (initial?.child_category ?? '') as string,
     }));
 
     /** 編集中の key（計算が打鍵を潰さないように） */
@@ -164,7 +164,7 @@ export default function ProductForm({
             applied_weight_g: toNumOrNull(form.applied_weight_g),
             carrier: form.carrier.trim(),
             amazon_size_label: form.amazon_size_label.trim(),
-            remark: form.remark.trim(),
+            child_category: form.child_category,
             product_sheet: [sheetId],
         };
         await onSubmit(payload);
@@ -196,6 +196,30 @@ export default function ProductForm({
                         required
                     />
                 </label>
+
+                {/* 子カテゴリ選択 */}
+                <label className="flex flex-col gap-1 sm:col-span-2">
+                    <span className="text-sm text-gray-600">子カテゴリ</span>
+                    <select
+                        className="rounded-md border px-3 py-2"
+                        value={form.child_category}
+                        onChange={(e) => setField('child_category', e.target.value)}
+                        required
+                    >
+                        <option value="">選択してください</option>
+                        <option value="game-console">game&console</option>
+                        <option value="household">Household goods</option>
+                        <option value="toys">Toys & Hobbies</option>
+                        <option value="electronics">electronic goods & Camera</option>
+                        <option value="wristwatch">wristwatch</option>
+                        <option value="fishing">fishing gear</option>
+                        <option value="anime">Animation Merchandise</option>
+                        <option value="pokemon">Pokémon</option>
+                        <option value="fashion">Fashion items</option>
+                        <option value="other">Other</option>
+                    </select>
+                </label>
+
 
                 <label className="flex flex-col gap-1">
                     <span className="text-sm text-gray-600">実送料（円）</span>
@@ -284,17 +308,6 @@ export default function ProductForm({
                     />
                 </label>
             </div>
-
-            <label className="flex flex-col gap-1 sm:col-span-2">
-                <span className="text-sm text-gray-600">備考</span>
-                <textarea
-                    className="rounded-md border px-3 py-2"
-                    rows={3}
-                    value={form.remark}
-                    onChange={(e) => setField('remark', e.target.value)}
-                    placeholder="メモや補足を書いてください"
-                />
-            </label>
 
             <div className="flex items-center gap-3">
                 <button type="submit" className="rounded-md bg-black px-4 py-2 text-white hover:opacity-90">
