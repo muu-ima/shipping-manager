@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import type { WPProduct } from '@/types/wp';
 import { headers } from 'next/headers';
+import { CATEGORY_LABELS } from '@/features/products/constants';
+import type { CategorySlug } from '@/features/products/constants';
 
 // タブ候補
 const SHEETS = [
@@ -26,6 +28,8 @@ type ProductMeta = {
   applied_weight_g?: number | string;
   carrier?: string;
   amazon_size_label?: string;
+  product_category?: string;
+  child_category?: string;
 };
 
 type SearchItem = WPProduct & {
@@ -270,9 +274,18 @@ export default async function ProductsPage({
                   const title = (typeof p.title === 'string' ? p.title : p.title?.rendered) ?? '-';
                   const metaObj = normalizeMeta(p);
 
-                  const childCategory = Array.isArray(p.child_category)
-                    ? p.child_category.join(', ')
-                    : p.child_category ?? '-';
+                   // ① meta.product_category → ② meta.child_category → ③ 旧 child_category（トップレベル）
+                     const metaCat =
+                    (typeof p.meta?.product_category === 'string' && p.meta?.product_category) ||
+                    (typeof p.meta?.child_category === 'string' && p.meta?.child_category) ||
+                    '';
+                  const legacyTop =
+                    Array.isArray(p.child_category)
+                      ? (p.child_category[0] ?? '')
+                      : (typeof p.child_category === 'string' ? p.child_category : '');
+                  const categorySlug = (metaCat || legacyTop) as '' | CategorySlug;
+                  const categoryLabel =
+                    categorySlug ? (CATEGORY_LABELS[categorySlug] ?? categorySlug) : '-';
 
                   return (
                     <tr key={p.id} className="border-b hover:bg-gray-50">
@@ -286,7 +299,7 @@ export default async function ProductsPage({
                       <td className="py-2 px-3 text-right">{fmtNum(metaObj.applied_weight_g)}</td>
                       <td className="py-2 px-3">{fmtTxt(metaObj.carrier)}</td>
                       <td className="py-2 px-3">{fmtTxt(metaObj.amazon_size_label)}</td>
-                      <td className="py-2 px-3">{childCategory}</td>
+                      <td className="py-2 px-3">{categoryLabel}</td>
                       <td className="py-2 px-3">
                         <Link
                           href={`/products/${p.id}`}
