@@ -169,7 +169,7 @@ export default async function ProductsPage({
 
           {/* 子カテゴリ */}
           <fieldset>
-            <legend className="text-sm font-semibold mb-2">子カテゴリ</legend>
+            <legend className="text-sm font-semibold mb-2">商品カテゴリ</legend>
             <div className="flex flex-col gap-2">
               {[
                 { slug: 'game-console', label: 'game&console' },
