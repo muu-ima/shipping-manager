@@ -347,11 +347,7 @@ export default function ProductForm({
          - 数値は state では常に string。送信直前のみ数値化。
          - ?? と || を混ぜる時は必ず括弧で優先順位を明示（TS5076対策）。
       */}
-            <input
-                type="hidden"
-                name="secret"
-                value={process.env.NEXT_PUBLIC_FORM_SECRET}
-            />
+       
         </form>
     );
 }
