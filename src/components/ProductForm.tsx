@@ -44,6 +44,7 @@ type SubmitPayload = {
     amazon_size_label: string;
     child_category: string;
     product_sheet: number[];
+    secret: string;
 };
 
 type Props = {
@@ -136,7 +137,6 @@ export default function ProductForm({
     const setField = <K extends keyof FormState>(key: K, value: FormState[K]) =>
         setForm(prev => ({ ...prev, [key]: value }));
 
-
     const onTextChange =
         (key: Exclude<keyof FormState, NumericKeys>) =>
             (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -191,6 +191,7 @@ export default function ProductForm({
             amazon_size_label: form.amazon_size_label.trim(),
             child_category: form.child_category,
             product_sheet: [sheetId],
+            secret: process.env.NEXT_PUBLIC_FORM_SECRET!,
         };
         await onSubmit(payload);
     };
@@ -346,6 +347,11 @@ export default function ProductForm({
          - 数値は state では常に string。送信直前のみ数値化。
          - ?? と || を混ぜる時は必ず括弧で優先順位を明示（TS5076対策）。
       */}
+            <input
+                type="hidden"
+                name="secret"
+                value={process.env.NEXT_PUBLIC_FORM_SECRET}
+            />
         </form>
     );
 }
