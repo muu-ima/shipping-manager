@@ -30,7 +30,6 @@ export default async function ProductsPage() {
               <th className="py-2 px-3 text-right">重さ (g)</th>
               <th className="py-2 px-3">配送業者</th>
               <th className="py-2 px-3">サイズラベル</th>
-              <th className="py-2 px-3">備考</th>
               <th className="py-2 px-3"></th>
             </tr>
           </thead>
@@ -46,7 +45,6 @@ export default async function ProductsPage() {
                 <td className="py-2 px-3 text-right">{p.meta?.weight_g ?? '-'}</td>
                 <td className="py-2 px-3">{p.meta?.carrier ?? '-'}</td>
                 <td className="py-2 px-3">{p.meta?.amazon_size_label ?? '-'}</td>
-                <td className="py-2 px-3 whitespace-pre-line">{p.meta?.remark ?? '-'}</td>
                 <td className="py-2 px-3">
                   <Link href={`/products/${p.id}`} className="text-blue-600 underline">
                     編集

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
+import { CATEGORY_LABELS, CATEGORY_SLUGS } from '@/features/products/constants';
 
 const SHEETS = [
     { key: 'keln', label: 'ケルン用', id: 3 },
@@ -40,7 +41,7 @@ type SubmitPayload = {
     applied_weight_g: number | null;
     carrier: string;
     amazon_size_label: string;
-    child_category: string; 
+    child_category: string;
     product_sheet: number[];
 };
 
@@ -97,7 +98,7 @@ export default function ProductForm({
         applied_weight_g: initial?.applied_weight_g != null ? String(initial.applied_weight_g) : '',
         carrier: (initial?.carrier ?? '') as string,
         amazon_size_label: (initial?.amazon_size_label ?? '') as string,
-        child_category: (initial?.child_category ?? '') as string,
+        child_category: ((initial as any)?.product_category ?? initial?.child_category ?? '') as string,
     }));
 
     /** 編集中の key（計算が打鍵を潰さないように） */
@@ -207,19 +208,13 @@ export default function ProductForm({
                         required
                     >
                         <option value="">選択してください</option>
-                        <option value="game-console">game&console</option>
-                        <option value="household">Household goods</option>
-                        <option value="toys">Toys & Hobbies</option>
-                        <option value="electronics">electronic goods & Camera</option>
-                        <option value="wristwatch">wristwatch</option>
-                        <option value="fishing">fishing gear</option>
-                        <option value="anime">Animation Merchandise</option>
-                        <option value="pokemon">Pokémon</option>
-                        <option value="fashion">Fashion items</option>
-                        <option value="other">Other</option>
+                        {CATEGORY_SLUGS.map((slug) => (
+                            <option key={slug} value={slug}>
+                                {CATEGORY_LABELS[slug]}
+                            </option>
+                        ))}
                     </select>
                 </label>
-
 
                 <label className="flex flex-col gap-1">
                     <span className="text-sm text-gray-600">実送料（円）</span>

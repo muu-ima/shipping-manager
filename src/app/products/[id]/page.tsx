@@ -13,7 +13,6 @@ type Initial = {
   shipping_actual_yen: number | string | null;
   carrier: string;
   amazon_size_label: string;
-  remark: string;
 };
 
 async function getProduct(id: string): Promise<{ id: number; initial: Initial } | null> {
@@ -36,7 +35,6 @@ async function getProduct(id: string): Promise<{ id: number; initial: Initial } 
       shipping_actual_yen: p.meta?.shipping_actual_yen ?? null,
       carrier: p.meta?.carrier ?? '',
       amazon_size_label: p.meta?.amazon_size_label ?? '',
-      remark: p.meta?.remark ?? '',
     },
   };
 }

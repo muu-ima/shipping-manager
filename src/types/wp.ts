@@ -10,7 +10,6 @@ export interface ProductMeta {
   shipping_actual_yen?: number | string | null;
   carrier?: string | null;
   amazon_size_label?: string | null;
-  remark?: string | null;
 }
 
 export interface WPProduct {

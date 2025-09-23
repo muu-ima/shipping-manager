@@ -17,7 +17,6 @@ type Initial = {
   shipping_actual_yen: number | string | null;
   carrier: string;
   amazon_size_label: string;
-  remark: string;
 };
 
 export default function EditProductClient({ id, initial }: { id: number; initial: Initial }) {

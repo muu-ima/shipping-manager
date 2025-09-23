@@ -26,7 +26,6 @@ type ProductMeta = {
   applied_weight_g?: number | string;
   carrier?: string;
   amazon_size_label?: string;
-  remark?: string;
 };
 
 type SearchItem = WPProduct & {
