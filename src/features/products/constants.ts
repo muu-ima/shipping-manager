@@ -11,4 +11,8 @@ export const CATEGORY_LABELS: Record<string, string> = {
   fashion: 'Fashion items',
   other: 'Other',
 };
-export const CATEGORY_SLUGS = Object.keys(CATEGORY_LABELS);
+// これが型（ビルド時のみ、実行時には消える）
+export type CategorySlug = keyof typeof CATEGORY_LABELS;
+
+// ついでに配列も型付きで
+export const CATEGORY_SLUGS: CategorySlug[] = Object.keys(CATEGORY_LABELS) as CategorySlug[];

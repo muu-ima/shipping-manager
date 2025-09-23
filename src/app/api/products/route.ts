@@ -1,6 +1,21 @@
 // src/app/api/products/route.ts
 import { wpFetch } from '@/lib/wp';
 
+// 先頭付近 or ファイル内のどこかに追加
+type WPProductMeta = {
+  product_category?: string;
+  child_category?: string;
+  // ほかメタがあっても許容
+  [k: string]: unknown;
+};
+
+type WPProduct = {
+  id?: number;
+  meta?: WPProductMeta;
+  // ほかフィールドがあっても許容
+  [k: string]: unknown;
+};
+
 type IncomingProductBody = {
   title?: string;
   name?: string;
@@ -53,16 +68,19 @@ export async function GET(request: Request) {
   const res = await wpFetch(`/wp-json/shipping/v1/search?${params.toString()}`);
   const payload = await res.json();
 
-  // payload 形: { data: WPProduct[], meta: {...} } を想定
-  // 応答も互換: product_category を child_category にミラー
-  if (payload?.data && Array.isArray(payload.data)) {
-    payload.data = payload.data.map((it: any) => {
-      if (it?.meta?.product_category && !it?.meta?.child_category) {
-        it.meta.child_category = it.meta.product_category;
-      }
-      return it;
-    });
-  }
+ // payload 形: { data: WPProduct[], meta: {...} } を想定
+// 応答も互換: product_category を child_category にミラー
+if (payload?.data && Array.isArray(payload.data)) {
+  const items = payload.data as unknown as WPProduct[];
+  payload.data = items.map((it: WPProduct): WPProduct => {
+    const meta: WPProductMeta = { ...(it.meta ?? {}) };
+    if (typeof meta.product_category === 'string' && !meta.child_category) {
+      meta.child_category = meta.product_category;
+    }
+    return { ...it, meta };
+  });
+}
+
 
   return new Response(JSON.stringify(payload), { status: res.status });
 }

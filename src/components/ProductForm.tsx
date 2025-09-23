@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { CATEGORY_LABELS, CATEGORY_SLUGS } from '@/features/products/constants';
+import type { CategorySlug } from '@/features/products/constants';
 
 const SHEETS = [
     { key: 'keln', label: 'ケルン用', id: 3 },
@@ -28,7 +29,7 @@ type FormState = {
     applied_weight_g: string;
     carrier: string;
     amazon_size_label: string;
-    child_category: string;
+    child_category: CategorySlug | '';
 };
 
 type SubmitPayload = {
@@ -46,12 +47,32 @@ type SubmitPayload = {
 };
 
 type Props = {
-    initial?: Partial<Record<keyof FormState, string | number | null>>;
+    initial?: ProductInitial;
     submitLabel?: string;
     onSubmit: (payload: SubmitPayload) => Promise<void> | void;
     onCancel?: () => void;
     defaultSheetKey?: SheetKey;
 };
+
+type WPProductMeta = {
+    product_category?: CategorySlug;
+    child_category?: CategorySlug;
+    // ほかの meta があれば追加
+};
+
+type ProductInitial = {
+    title?: string;
+    shipping_actual_yen?: number | string | null;
+    length_cm?: number | string | null;
+    width_cm?: number | string | null;
+    height_cm?: number | string | null;
+    weight_g?: number | string | null;
+    applied_weight_g?: number | string | null;
+    carrier?: string | null;
+    amazon_size_label?: string | null;
+    meta?: WPProductMeta; // ← これがポイント
+};
+
 
 /** 空 or 非数なら null */
 function toNumOrNull(s: string): number | null {
@@ -98,7 +119,9 @@ export default function ProductForm({
         applied_weight_g: initial?.applied_weight_g != null ? String(initial.applied_weight_g) : '',
         carrier: (initial?.carrier ?? '') as string,
         amazon_size_label: (initial?.amazon_size_label ?? '') as string,
-        child_category: ((initial as any)?.product_category ?? initial?.child_category ?? '') as string,
+        child_category:
+            (initial?.meta?.product_category as CategorySlug | undefined) ??
+            (initial?.meta?.child_category as CategorySlug | undefined) ?? '',
     }));
 
     /** 編集中の key（計算が打鍵を潰さないように） */
@@ -110,8 +133,9 @@ export default function ProductForm({
     // ★ これを追加（現在の寸法キー）
     const dimsKey = `${form.length_cm}|${form.width_cm}|${form.height_cm}`;
 
-    const setField = (key: keyof FormState, value: string) =>
-        setForm((prev) => ({ ...prev, [key]: value }));
+    const setField = <K extends keyof FormState>(key: K, value: FormState[K]) =>
+        setForm(prev => ({ ...prev, [key]: value }));
+
 
     const onTextChange =
         (key: Exclude<keyof FormState, NumericKeys>) =>
@@ -198,15 +222,18 @@ export default function ProductForm({
                     />
                 </label>
 
-                {/* 子カテゴリ選択 */}
+                {/* 商品カテゴリ選択 */}
                 <label className="flex flex-col gap-1 sm:col-span-2">
-                    <span className="text-sm text-gray-600">子カテゴリ</span>
+                    <span className="text-sm text-gray-600">商品カテゴリ</span>
                     <select
                         className="rounded-md border px-3 py-2"
                         value={form.child_category}
-                        onChange={(e) => setField('child_category', e.target.value)}
+                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                            setField('child_category', e.target.value as CategorySlug | '')
+                        }
                         required
                     >
+
                         <option value="">選択してください</option>
                         {CATEGORY_SLUGS.map((slug) => (
                             <option key={slug} value={slug}>
