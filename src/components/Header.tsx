@@ -199,7 +199,6 @@ export default function Header() {
                                     管理システム
                                 </button>
                             </li>
-                            <li><Link className="font-medium py-2" href="/help">ヘルプ</Link></li>
                         </ul>
                     </nav>
                 </div>
