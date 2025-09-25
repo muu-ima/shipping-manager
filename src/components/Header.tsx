@@ -73,10 +73,13 @@ function useLockBodyScroll(locked: boolean) {
     }, [locked]);
 }
 
+
+
 export default function Header() {
     const [open, setOpen] = useState<'calc-us' | 'calc-uk' | 'mgmt' | null>(null);
+    const [mobileOpen, setMobileOpen] = useState(false);
     const panelRef = useRef<HTMLDivElement>(null);
-    useLockBodyScroll(!!open);
+    useLockBodyScroll(!!open || mobileOpen);
 
     useEffect(() => {
         function onDocClick(e: MouseEvent) {
@@ -158,8 +161,18 @@ export default function Header() {
             <header className="bg-white shadow sticky top-0 z-50">
                 <div className="mx-auto max-w-7xl flex items-center justify-between px-6 py-3">
                     <Link href="/" className="text-lg font-bold">muu-studio</Link>
-                    <nav aria-label="メイン">
+                    <nav aria-label="メイン" className="hidden md:block">
                         <ul className="flex gap-8">
+                            <li>
+                                <Link
+                                    href="https://enyukari.capoo.jp/profit-calc/"
+                                    className="inline-flex item-center px-4 py-2 rounded-md font-medium transition-colors duration-200
+                   hover:bg-indigo-50 hover:text-indigo-700 focus:outline-none
+                   focus:ring-2 focus:ring-indigo-400"
+                                >
+                                    Home
+                                </Link>
+                            </li>
                             <li>
                                 <button
                                     className="px-4 py-2 rounded-md cursor-pointer font-medium 
@@ -201,10 +214,73 @@ export default function Header() {
                             </li>
                         </ul>
                     </nav>
+                    {/* モバイル：ハンバーガー */}
+                    <button
+                        className="md:hidden inline-flex flex-col items-center justify-center space-y-1.5 size-10 rounded-md border"
+                        aria-label="メニューを開く"
+                        aria-haspopup="dialog"
+                        aria-expanded={mobileOpen}
+                        onClick={() => setMobileOpen(true)}
+                    >
+                        {/* シンプルな三本線 */}
+                        <span className="block w-6 h-0.5 bg-black rounded" />
+                        <span className="block w-6 h-0.5 bg-black rounded" />
+                        <span className="block w-6 h-0.5 bg-black rounded" />
+                    </button>
                 </div>
             </header>
 
             {open && <MenuPanel which={open} />}
+            {/* モバイルの全画面メニュー  ← ここに貼る */}
+            {mobileOpen && (
+                <div className="fixed inset-0 z-60" role="dialog" aria-modal="true">
+                    <div className="absolute inset-0 bg-black/30" onClick={() => setMobileOpen(false)} />
+                    <div className="absolute inset-x-0 bottom-0 h-[88vh] bg-white rounded-t-2xl shadow-2xl flex flex-col">
+                        <div className="flex items-center justify-between px-4 py-3 border-b">
+                            <span className="font-semibold">メニュー</span>
+                            <button
+                                className="rounded-md border px-3 py-1 text-sm"
+                                onClick={() => setMobileOpen(false)}
+                                aria-label="閉じる"
+                            >✕</button>
+                        </div>
+
+                        <div className="overflow-auto p-3 space-y-3">
+                            {/* ← ここに Home を先頭追加 */}
+                            <a
+                                href="https://enyukari.capoo.jp/profit-calc/"
+                                className="block rounded-md border p-3 hover:border-indigo-300 hover:bg-indigo-50/40"
+                                onClick={() => setMobileOpen(false)}
+                            >
+                                <div className="font-semibold">Home</div>
+                                <p className="text-sm text-zinc-500 mt-1">トップページへ戻る</p>
+                            </a>
+                            {(['calc-us', 'calc-uk', 'mgmt'] as const).map((key) => (
+                                <details key={key} className="rounded-lg border">
+                                    <summary className="cursor-pointer select-none px-4 py-3 font-medium">
+                                        {sections[key].title}
+                                    </summary>
+                                    <div className="p-3 grid gap-3">
+                                        {sections[key].links.map(l => (
+                                            <a
+                                                key={l.label}
+                                                href={l.href}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="block rounded-md border p-3 hover:border-indigo-300 hover:bg-indigo-50/40"
+                                                onClick={() => setMobileOpen(false)}
+                                            >
+                                                <div className="font-semibold">{l.label}</div>
+                                                {l.desc && <p className="text-sm text-zinc-500 mt-1">{l.desc}</p>}
+                                            </a>
+                                        ))}
+                                    </div>
+                                </details>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
     );
 }

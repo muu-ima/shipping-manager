@@ -5,7 +5,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
 export const metadata: Metadata = {
-  title: "US-BE",
+  title: "Shipping-manager",
   description: "計算アプリ＆管理アプリの共通メニュー",
 };
 
