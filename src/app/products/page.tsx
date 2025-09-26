@@ -127,7 +127,7 @@ export default async function ProductsPage({
     id: sp.id,
     q: sp.q,
     shipping_actual_yen_max: sp.shipping_actual_yen_max,
-     weight_g_max: sp.weight_g_max,  
+    weight_g_max: sp.weight_g_max,
     applied_weight_g_max: sp.applied_weight_g_max,
     carrier: sp.carrier,
     amazon_size_label: sp.amazon_size_label,
@@ -275,8 +275,8 @@ export default async function ProductsPage({
                   const title = (typeof p.title === 'string' ? p.title : p.title?.rendered) ?? '-';
                   const metaObj = normalizeMeta(p);
 
-                   // ① meta.product_category → ② meta.child_category → ③ 旧 child_category（トップレベル）
-                     const metaCat =
+                  // ① meta.product_category → ② meta.child_category → ③ 旧 child_category（トップレベル）
+                  const metaCat =
                     (typeof p.meta?.product_category === 'string' && p.meta?.product_category) ||
                     (typeof p.meta?.child_category === 'string' && p.meta?.child_category) ||
                     '';
