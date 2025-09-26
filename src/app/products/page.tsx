@@ -127,6 +127,7 @@ export default async function ProductsPage({
     id: sp.id,
     q: sp.q,
     shipping_actual_yen_max: sp.shipping_actual_yen_max,
+     weight_g_max: sp.weight_g_max,  
     applied_weight_g_max: sp.applied_weight_g_max,
     carrier: sp.carrier,
     amazon_size_label: sp.amazon_size_label,
