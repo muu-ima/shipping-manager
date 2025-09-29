@@ -52,6 +52,7 @@ type Props = {
     submitLabel?: string;
     onSubmit: (payload: SubmitPayload) => Promise<void> | void;
     onCancel?: () => void;
+    disabled?: boolean;
     defaultSheetKey?: SheetKey;
 };
 
