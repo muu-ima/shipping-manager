@@ -241,7 +241,7 @@ export default async function ProductsPage({
                       <td className="py-2 px-3">{fmtTxt(metaObj.carrier)}</td>
                       <td className="py-2 px-3">{fmtTxt(metaObj.amazon_size_label)}</td>
                       <td className="py-2 px-3">{categoryLabel}</td>
-                      <td className="py-2 px-3">
+                      {/* <td className="py-2 px-3">
                         <Link
                           href={`/products/${p.id}`}
                           prefetch={false}
@@ -249,7 +249,7 @@ export default async function ProductsPage({
                         >
                           編集
                         </Link>
-                      </td>
+                      </td> */}
                     </tr>
                   );
                 })
