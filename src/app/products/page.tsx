@@ -3,6 +3,7 @@ import type { WPProduct } from '@/types/wp';
 import { headers } from 'next/headers';
 import { CATEGORY_LABELS } from '@/features/products/constants';
 import type { CategorySlug } from '@/features/products/constants';
+import Sidebar from '@/components/Sidebar';
 
 // タブ候補
 const SHEETS = [
@@ -30,6 +31,22 @@ type ProductMeta = {
   amazon_size_label?: string;
   product_category?: string;
   child_category?: string;
+};
+
+/* ===== クエリ型 ===== */
+type SearchQuery = {
+  sheet?: string;
+  child_category?: string | string[];
+  // 10項目に対応する検索パラメータ
+  id?: string;  // ID完全一致
+  q?: string;   // 商品名（タイトル）部分一致
+  shipping_actual_yen_max?: string;
+  weight_g_max?: string;
+  applied_weight_g_max?: string;
+  carrier?: string;            // 配送業者 完全一致
+  amazon_size_label?: string;  // サイズラベル 完全一致
+  page?: string;
+  per_page?: string;
 };
 
 type SearchItem = WPProduct & {
@@ -97,21 +114,21 @@ async function getProducts(
 }
 
 
-/* ===== クエリ型 ===== */
-type SearchQuery = {
-  sheet?: string;
-  child_category?: string | string[];
-  // 10項目に対応する検索パラメータ
-  id?: string;  // ID完全一致
-  q?: string;   // 商品名（タイトル）部分一致
-  shipping_actual_yen_max?: string;
-  weight_g_max?: string;
-  applied_weight_g_max?: string;
-  carrier?: string;            // 配送業者 完全一致
-  amazon_size_label?: string;  // サイズラベル 完全一致
-  page?: string;
-  per_page?: string;
-};
+function Tooltip({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className='group relative inline-flex'>
+      {children}
+      <div
+        role="tooltip"
+        className="pointer-events-none absolute left-full top-1/2 z-50 ml-2 -translate-y-1/2
+                   whitespace-nowrap rounded-md bg-black/80 px-2 py-1 text-xs text-white
+                   opacity-0 shadow transition-opacity group-hover:opacity-100"
+      >
+        {label}
+      </div>
+    </div>
+  );
+}
 
 export default async function ProductsPage({
   searchParams,
@@ -141,99 +158,7 @@ export default async function ProductsPage({
     <main className="h-screen flex flex-row">
 
       {/* === サイドバー === */}
-      <aside className="w-72 shrink-0 border-r bg-white/80 p-6 backdrop-blur overflow-y-auto">
-        {/* タブ */}
-        <div className="mb-6">
-          <div className="flex flex-col gap-2">
-            {SHEETS.map((s) => (
-              <Link
-                key={s.key}
-                href={{ pathname: '/products', query: { ...sp, sheet: s.key } }}
-                prefetch={false}
-                className={[
-                  'w-full px-4 py-2 rounded-lg text-sm font-medium text-left',
-                  sheet === s.key
-                    ? 'bg-black text-white'
-                    : 'text-gray-700 hover:bg-gray-100',
-                ].join(' ')}
-              >
-                {s.label}
-              </Link>
-            ))}
-          </div>
-        </div>
-
-
-        {/* 絞り込みフォーム */}
-        <form method="get" className="space-y-6">
-          <input type="hidden" name="sheet" value={sheet} />
-
-          {/* 子カテゴリ */}
-          <fieldset>
-            <legend className="text-sm font-semibold mb-2">商品カテゴリ</legend>
-            <div className="flex flex-col gap-2">
-              {[
-                { slug: 'game-console', label: 'game&console' },
-                { slug: 'household', label: 'Household goods' },
-                { slug: 'toys', label: 'Toys & Hobbies' },
-                { slug: 'electronics', label: 'electronic goods & Camera' },
-                { slug: 'wristwatch', label: 'wristwatch' },
-                { slug: 'fishing', label: 'fishing gear' },
-                { slug: 'anime', label: 'Animation Merchandise' },
-                { slug: 'pokemon', label: 'Pokémon' },
-                { slug: 'fashion', label: 'Fashion items' },
-                { slug: 'other', label: 'Other' },
-              ].map((c) => (
-                <label key={c.slug} className="inline-flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    name="child_category"
-                    value={c.slug}
-                    defaultChecked={
-                      Array.isArray(sp.child_category)
-                        ? sp.child_category.includes(c.slug)
-                        : sp.child_category === c.slug
-                    }
-                    className="accent-black"
-                  />
-                  {c.label}
-                </label>
-              ))}
-            </div>
-          </fieldset>
-
-          {/* 基本情報 */}
-          <fieldset>
-            <legend className="text-sm font-semibold mb-2">基本情報</legend>
-            <div className="flex flex-col gap-3">
-              <input name="id" defaultValue={sp.id ?? ''} placeholder="ID" className="rounded-md border px-3 py-2 text-sm" />
-              <input name="q" defaultValue={sp.q ?? ''} placeholder="商品名" className="rounded-md border px-3 py-2 text-sm" />
-              <input name="carrier" defaultValue={sp.carrier ?? ''} placeholder="配送業者" className="rounded-md border px-3 py-2 text-sm" />
-              <input name="amazon_size_label" defaultValue={sp.amazon_size_label ?? ''} placeholder="サイズラベル" className="rounded-md border px-3 py-2 text-sm" />
-            </div>
-          </fieldset>
-
-          {/* 数値フィルター */}
-          <fieldset>
-            <legend className="text-sm font-semibold mb-2">数値フィルター</legend>
-            <div className="flex flex-col gap-3">
-              <input name="shipping_actual_yen_max" defaultValue={sp.shipping_actual_yen_max ?? ''} placeholder="送料 最大(円)" className="rounded-md border px-3 py-2 text-sm" />
-              <input name="weight_g_max" defaultValue={sp.weight_g_max ?? ''} placeholder="実重量 最大(g)" className="rounded-md border px-3 py-2 text-sm" />
-              <input name="applied_weight_g_max" defaultValue={sp.applied_weight_g_max ?? ''} placeholder="適用容量 最大(g)" className="rounded-md border px-3 py-2 text-sm" />
-            </div>
-          </fieldset>
-
-          {/* アクション */}
-          <div className="flex flex-col gap-2">
-            <button type="submit" className="rounded-lg bg-black text-white px-4 py-2 text-sm hover:opacity-90">
-              絞り込む
-            </button>
-            <Link href={{ pathname: '/products', query: { sheet } }} prefetch={false} className="text-sm text-gray-500 hover:underline text-center">
-              絞り込みをクリア
-            </Link>
-          </div>
-        </form>
-      </aside>
+      <Sidebar sp={sp} sheet={sheet} SHEETS={SHEETS} />
       {/* === メイン === */}
       <section className="flex-1 flex flex-col p-6 overflow-hidden">
         {/* 件数表示 */}
@@ -248,18 +173,18 @@ export default async function ProductsPage({
         <div className="flex-1 overflow-auto rounded-xl border bg-white/70 shadow-sm backdrop-blur">
           <table className="table-fixed w-full text-sm border-collapse">
             <colgroup>
-              <col className="w-[72px]" />    {/* ID */}
-              <col className="w-[420px]" />   {/* 商品名 */}
-              <col className="w-[120px]" />   {/* 送料 */}
-              <col className="w-[88px]" />    {/* 長さ */}
-              <col className="w-[88px]" />    {/* 幅 */}
-              <col className="w-[88px]" />    {/* 高さ */}
-              <col className="w-[120px]" />   {/* 実重量 */}
-              <col className="w-[130px]" />   {/* 適用容量 */}
-              <col className="w-[120px]" />   {/* 配送業者 */}
-              <col className="w-[240px]" />   {/* サイズラベル */}
-              <col className="w-[160px]" />   {/* カテゴリ */}
-              <col className="w-[84px]" />    {/* 編集 */}
+              {/* ID */}<col className="w-[72px]" />
+              {/* 商品名 */}<col className="w-[420px]" />
+              {/* 送料 */}<col className="w-[120px]" />
+              {/* 長さ */}<col className="w-[88px]" />
+              {/* 幅 */}<col className="w-[88px]" />
+              {/* 高さ */}<col className="w-[88px]" />
+              {/* 実重量 */}<col className="w-[120px]" />
+              {/* 適用容量 */}<col className="w-[130px]" />
+              {/* 配送業者 */}<col className="w-[120px]" />
+              {/* サイズラベル */}<col className="w-[240px]" />
+              {/* カテゴリ */}<col className="w-[160px]" />
+              {/* 編集 */}<col className="w-[84px]" />
             </colgroup>
 
             <thead className="sticky top-0 bg-gray-100 z-10">
