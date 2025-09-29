@@ -246,7 +246,22 @@ export default async function ProductsPage({
 
         {/* テーブル */}
         <div className="flex-1 overflow-auto rounded-xl border bg-white/70 shadow-sm backdrop-blur">
-          <table className="w-full text-sm border-collapse">
+          <table className="table-fixed w-full text-sm border-collapse">
+            <colgroup>
+              <col className="w-[72px]" />    {/* ID */}
+              <col className="w-[420px]" />   {/* 商品名 */}
+              <col className="w-[120px]" />   {/* 送料 */}
+              <col className="w-[88px]" />    {/* 長さ */}
+              <col className="w-[88px]" />    {/* 幅 */}
+              <col className="w-[88px]" />    {/* 高さ */}
+              <col className="w-[120px]" />   {/* 実重量 */}
+              <col className="w-[130px]" />   {/* 適用容量 */}
+              <col className="w-[120px]" />   {/* 配送業者 */}
+              <col className="w-[240px]" />   {/* サイズラベル */}
+              <col className="w-[160px]" />   {/* カテゴリ */}
+              <col className="w-[84px]" />    {/* 編集 */}
+            </colgroup>
+
             <thead className="sticky top-0 bg-gray-100 z-10">
               <tr className="text-left border-b">
                 <th className="py-2 px-3">ID</th>
@@ -292,12 +307,12 @@ export default async function ProductsPage({
                     <tr key={p.id} className="border-b hover:bg-gray-50">
                       <td className="py-2 px-3">{p.id}</td>
                       <td className="py-2 px-3">{title}</td>
-                      <td className="py-2 px-3 text-right">{fmtNum(metaObj.shipping_actual_yen)}</td>
+                      <td className="py-2 px-3 text-right whitespace-nowrap tabular-nums">{fmtNum(metaObj.shipping_actual_yen)}</td>
                       <td className="py-2 px-3 text-right">{fmtNum(metaObj.length_cm)}</td>
                       <td className="py-2 px-3 text-right">{fmtNum(metaObj.width_cm)}</td>
                       <td className="py-2 px-3 text-right">{fmtNum(metaObj.height_cm)}</td>
-                      <td className="py-2 px-3 text-right">{fmtNum(metaObj.weight_g)}</td>
-                      <td className="py-2 px-3 text-right">{fmtNum(metaObj.applied_weight_g)}</td>
+                      <td className="py-2 px-3 text-right whitespace-nowrap tabular-nums">{fmtNum(metaObj.weight_g)}</td>
+                      <td className="py-2 px-3 text-right whitespace-nowrap tabular-nums">{fmtNum(metaObj.applied_weight_g)}</td>
                       <td className="py-2 px-3">{fmtTxt(metaObj.carrier)}</td>
                       <td className="py-2 px-3">{fmtTxt(metaObj.amazon_size_label)}</td>
                       <td className="py-2 px-3">{categoryLabel}</td>
@@ -318,6 +333,6 @@ export default async function ProductsPage({
           </table>
         </div>
       </section>
-    </main>
+    </main >
   );
 }
