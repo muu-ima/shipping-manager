@@ -10,6 +10,18 @@ import Modal from '@/components/Modal';
 type ProductFormProps = React.ComponentProps<typeof ProductForm>;
 type SubmitPayload = Parameters<NonNullable<ProductFormProps['onSubmit']>>[0];
 
+// 例外メッセージを安全に文字列化
+function toErrorMessage(e: unknown): string {
+  if (e instanceof Error) return e.message;
+  if (typeof e === 'string') return e;
+  try {
+    return JSON.stringify(e);
+  } catch {
+    return '不明なエラーが発生しました';
+  }
+}
+
+
 export default function SecretFormPage() {
   const router = useRouter();
 
@@ -107,8 +119,8 @@ export default function SecretFormPage() {
             onSubmit={async (values) => {
               try {
                 await createProduct(values);
-              } catch (e: any) {
-                alert(e?.message ?? 'エラーが発生しました');
+              } catch (e: unknown) {
+                alert(toErrorMessage(e));
               }
             }}
           />
