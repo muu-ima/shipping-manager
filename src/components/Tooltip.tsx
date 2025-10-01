@@ -1,7 +1,16 @@
 // src/components/Tooltip.tsx
 'use client';
+import React from "react";
 
-export default function Tooltip({ label }: { label: string }) { return (  
+type TooltipProps = React.PropsWithChildren<{
+  label: string;
+  className?: string;
+}>;
+
+export default function Tooltip({ label, children, className }: TooltipProps) {
+  return (
+    <div className={['group relative inline-flex', className].filter(Boolean).join(' ')}>
+      {children}
       <div
         role="tooltip"
         className="pointer-events-none absolute left-full top-1/2 z-50 ml-2 -translate-y-1/2
@@ -10,5 +19,6 @@ export default function Tooltip({ label }: { label: string }) { return (
       >
         {label}
       </div>
+    </div>
   );
 }
