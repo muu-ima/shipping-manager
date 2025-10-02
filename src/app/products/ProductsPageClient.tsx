@@ -171,7 +171,7 @@ export default function ProductsPageClient() {
       <section className="flex-1 flex flex-col p-6 overflow-hidden">
         {/* 件数 */}
         <div className="flex items-center justify-between mb-4">
-          <h1 className="text-xl font-bold">商品一覧</h1>
+          <h1 className="text-xl font-bold">発送商品一覧</h1>
           <div className="text-sm text-gray-600">
             {meta ? <>該当 <b>{meta.total}</b> 件</> : null}
           </div>
