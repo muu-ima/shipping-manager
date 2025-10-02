@@ -202,7 +202,7 @@ export default function ProductsPageClient() {
                   <th className="py-2 px-3 text-right">送料 (円)</th>
                   <th className="py-2 px-3 text-right">縦 (cm)</th>
                   <th className="py-2 px-3 text-right">横 (cm)</th>
-                  <th className="py-2 px-3 text-right">高さ (cm)</th>
+                  <th className="py-2 px-3 text-right">幅 (cm)</th>
                   <th className="py-2 px-3 text-right">実重量 (g)</th>
                   <th className="py-2 px-3 text-right">適用容量 (g)</th>
                   <th className="py-2 px-3">配送業者</th>
@@ -238,9 +238,9 @@ export default function ProductsPageClient() {
                         <td className="py-2 px-3">{p.id}</td>
                         <td className="py-2 px-3">{title}</td>
                         <td className="py-2 px-3 text-right tabular-nums">{fmtNum(m.shipping_actual_yen)}</td>
-                        <td className="py-2 px-3 text-right">{fmtNum(m.length_cm)}</td>
-                        <td className="py-2 px-3 text-right">{fmtNum(m.width_cm)}</td>
                         <td className="py-2 px-3 text-right">{fmtNum(m.height_cm)}</td>
+                        <td className="py-2 px-3 text-right">{fmtNum(m.length_cm)}</td>
+                        <td className="py-2 px-3 text-right">{fmtNum(m.width_cm)}</td>         
                         <td className="py-2 px-3 text-right tabular-nums">{fmtNum(m.weight_g)}</td>
                         <td className="py-2 px-3 text-right tabular-nums">{fmtNum(m.applied_weight_g)}</td>
                         <td className="py-2 px-3">{fmtTxt(m.carrier)}</td>
