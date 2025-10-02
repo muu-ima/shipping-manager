@@ -213,7 +213,7 @@ export default function ProductsPageClient({ searchParams }: ProductsPageClientP
                   <th className="py-2 px-3 text-right">送料 (円)</th>
                   <th className="py-2 px-3 text-right">縦 (cm)</th>
                   <th className="py-2 px-3 text-right">横 (cm)</th>
-                  <th className="py-2 px-3 text-right">高さ (cm)</th>
+                  <th className="py-2 px-3 text-right">幅 (cm)</th>
                   <th className="py-2 px-3 text-right">実重量 (g)</th>
                   <th className="py-2 px-3 text-right">適用容量 (g)</th>
                   <th className="py-2 px-3">配送業者</th>
