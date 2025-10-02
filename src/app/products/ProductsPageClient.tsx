@@ -7,6 +7,7 @@ import type { CategorySlug } from "@/features/products/constants";
 import Sidebar from "@/components/Sidebar";
 import LoadingOverlay from "@/components/LoadingOverlay";
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import DraggableScroll from "@/components/DraggableScroll";
 
 /* ===== 設定/ユーティリティ ===== */
@@ -101,20 +102,15 @@ async function getProducts(
 }
 
 /* ===== クライアント本体 ===== */
-type ProductsPageClientProps = {
-  searchParams: Record<string, string | string[] | undefined>;
-};
+export default function ProductsPageClient() {
+  const searchParams = useSearchParams();
 
-export default function ProductsPageClient({ searchParams }: ProductsPageClientProps) {
-  // Server から渡ってきた searchParams を SearchQuery へ整形
+  // URL → SearchQuery に整形（useMemoで安定化）
   const sp: SearchQuery = useMemo(() => {
-    const get = (k: string) => {
-      const v = searchParams[k];
-      return Array.isArray(v) ? v[0] : (v as string | undefined);
-    };
+    const get = (k: string) => searchParams.get(k) ?? undefined;
     const getAll = (k: string) => {
-      const v = searchParams[k];
-      return Array.isArray(v) ? v : v ? [v as string] : undefined;
+      const arr = searchParams.getAll(k);
+      return arr.length ? arr : undefined;
     };
     return {
       sheet: get("sheet"),
@@ -131,15 +127,8 @@ export default function ProductsPageClient({ searchParams }: ProductsPageClientP
     };
   }, [searchParams]);
 
-  // 依存比較用キー（URLSearchParams 化して順序に影響されないように）
-  const spKey = useMemo(() => {
-    const p = new URLSearchParams();
-    Object.entries(sp).forEach(([k, v]) => {
-      if (Array.isArray(v)) v.forEach((vv) => p.append(k, vv));
-      else if (v) p.set(k, v);
-    });
-    return p.toString();
-  }, [sp]);
+  // 依存比較用キー（URLの実体を使うのが定番）
+  const spKey = useMemo(() => searchParams.toString(), [searchParams]);
 
   const sheet = (sp.sheet as SheetKey) ?? "keln";
   const sheetDef = SHEETS.find((s) => s.key === sheet)!;
@@ -213,7 +202,7 @@ export default function ProductsPageClient({ searchParams }: ProductsPageClientP
                   <th className="py-2 px-3 text-right">送料 (円)</th>
                   <th className="py-2 px-3 text-right">縦 (cm)</th>
                   <th className="py-2 px-3 text-right">横 (cm)</th>
-                  <th className="py-2 px-3 text-right">幅 (cm)</th>
+                  <th className="py-2 px-3 text-right">高さ (cm)</th>
                   <th className="py-2 px-3 text-right">実重量 (g)</th>
                   <th className="py-2 px-3 text-right">適用容量 (g)</th>
                   <th className="py-2 px-3">配送業者</th>
@@ -280,7 +269,7 @@ export default function ProductsPageClient({ searchParams }: ProductsPageClientP
               </Link>
             )}
 
-            {/* ページ番号 */}
+            {/* ページ番号（…省略） */}
             {Array.from({ length: meta.pages }).map((_, i) => {
               const pageNum = i + 1;
 

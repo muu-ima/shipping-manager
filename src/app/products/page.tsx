@@ -4,14 +4,10 @@ import ProductsPageClient from "./ProductsPageClient";
 
 export const dynamic = "force-dynamic";
 
-export default function Page({
-  searchParams,
-}: {
-  searchParams: Record<string, string | string[] | undefined>;
-}) {
+export default function Page() {
   return (
     <Suspense fallback={<div>Loading...</div>}>
-      <ProductsPageClient searchParams={searchParams} />
+      <ProductsPageClient />
     </Suspense>
   );
 }
