@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { CATEGORY_LABELS, CATEGORY_SLUGS } from '@/features/products/constants';
 import type { CategorySlug } from '@/features/products/constants';
+import LoadingOverlay from './LoadingOverlay';
 
 const SHEETS = [
     { key: 'keln', label: 'ケルン用', id: 3 },
@@ -108,6 +109,7 @@ export default function ProductForm({
     onCancel,
     defaultSheetKey = 'keln',
 }: Props) {
+    const [submitting, setSubmitting] = useState(false);
     const [sheetKey, setSheetKey] = useState<SheetKey>(defaultSheetKey);
     const sheetId = SHEETS.find((s) => s.key === sheetKey)!.id;
     const [form, setForm] = useState<FormState>(() => ({
@@ -180,6 +182,10 @@ export default function ProductForm({
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (submitting) return;
+        setSubmitting(true);
+
+        try{
         const payload: SubmitPayload = {
             title: form.title.trim(),
             shipping_actual_yen: toNumOrNull(form.shipping_actual_yen),
@@ -195,6 +201,11 @@ export default function ProductForm({
             secret: process.env.NEXT_PUBLIC_FORM_SECRET!,
         };
         await onSubmit(payload);
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setSubmitting(false);
+        }
     };
 
     return (
@@ -348,7 +359,8 @@ export default function ProductForm({
          - 数値は state では常に string。送信直前のみ数値化。
          - ?? と || を混ぜる時は必ず括弧で優先順位を明示（TS5076対策）。
       */}
-       
+      {/* 3) 全画面ブロック型ローダーをフォームの最後に */}
+        <LoadingOverlay show={submitting} message="保存中です…" />
         </form>
     );
 }

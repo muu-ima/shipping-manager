@@ -7,6 +7,8 @@ import Sidebar from "@/components/Sidebar";
 import LoadingOverlay from "@/components/LoadingOverlay";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams} from "next/navigation";
+import DraggableScroll from '@/components/DraggableScroll';
+
 
 // タブ候補
 const SHEETS = [
@@ -170,6 +172,7 @@ export default function ProductsPage() {
         </div>
 
         <div className="flex-1 overflow-auto rounded-xl border bg-white/70 shadow-sm backdrop-blur">
+        <DraggableScroll>
           <table className="table-fixed w-full text-sm border-collapse">
             <colgroup>
               <col className="w-[72px]" />
@@ -242,6 +245,7 @@ export default function ProductsPage() {
               )}
             </tbody>
           </table>
+          </DraggableScroll>
         </div>
       </section>
 
