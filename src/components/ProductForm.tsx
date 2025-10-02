@@ -269,8 +269,18 @@ export default function ProductForm({
 
 
                 <div className="grid grid-cols-3 gap-3 sm:col-span-2">
+                               <label className="flex flex-col gap-1">
+                        <span className="text-sm text-gray-600">縦（cm）</span>
+                        <input
+                            className="rounded-md border px-3 py-2"
+                            inputMode="decimal"
+                            value={form.height_cm}
+                            onChange={onNumberChange('height_cm')}
+                            placeholder="例：10"
+                        />
+                    </label>
                     <label className="flex flex-col gap-1">
-                        <span className="text-sm text-gray-600">長さ（cm）</span>
+                        <span className="text-sm text-gray-600">横（cm）</span>
                         <input
                             className="rounded-md border px-3 py-2"
                             inputMode="decimal"
