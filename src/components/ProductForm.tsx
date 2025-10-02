@@ -299,16 +299,6 @@ export default function ProductForm({
                             placeholder="例：20"
                         />
                     </label>
-                    <label className="flex flex-col gap-1">
-                        <span className="text-sm text-gray-600">高さ（cm）</span>
-                        <input
-                            className="rounded-md border px-3 py-2"
-                            inputMode="decimal"
-                            value={form.height_cm}
-                            onChange={onNumberChange('height_cm')}
-                            placeholder="例：10"
-                        />
-                    </label>
                 </div>
 
                 <label className="flex flex-col gap-1">
